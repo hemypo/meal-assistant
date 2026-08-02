@@ -93,19 +93,19 @@ cp -r /tmp/ECC/rules/typescript .claude/rules/ecc/
 
 Keep enabled MCP servers minimal (`/mcp`) — ECC warns that each server's tool descriptions consume the context window. Claude Code reads `CLAUDE.md` automatically at session start; its conflict rule (§0) and self-maintaining context protocol (§1) govern every session.
 
-Development principles from [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) (think-before-coding, simplicity-first, surgical-changes, goal-driven-execution) are **embedded in `CLAUDE.md` §6** — no separate plugin install is needed for this project, and any collision with ECC rules resolves in CLAUDE.md's favor per its §0.
+Development principles from [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) (think-before-coding, simplicity-first, surgical-changes, goal-driven-execution) are **embedded in `CLAUDE.md` §6**, and the `karpathy-guidelines` skill is also installed at `.claude/skills/`. On any collision, CLAUDE.md wins per its §0 (which ranks skills and ECC rules below this file).
 
-Two more project skills, installed by the founder himself (never by the agent):
+**Installed project-local and committed** (2026-08-02, at the founder's instruction — an earlier version of this file said these were founder-only; see `CLAUDE.md` §7):
 
-```bash
-# UI UX Pro Max — design intelligence (requires Python 3.x installed on your machine)
-npx ui-ux-pro-max-cli init --ai claude      # installs to .claude/skills/ui-ux-pro-max
+| Path | Source | Notes |
+|---|---|---|
+| `.claude/rules/ecc/{common,typescript}` | [ECC](https://github.com/affaan-m/ECC) | Rule markdown only. The plugin half still needs `/plugin marketplace add` from an interactive terminal. |
+| `.claude/skills/karpathy-guidelines` | [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) | MIT, single `SKILL.md`. |
+| `.claude/skills/ui-ux-pro-max` | [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) v2.11.0 | ⚠️ its `scripts/search.py` needs **Python 3.x**, which is not installed on this machine (`python` resolves to the Microsoft Store stub). The data and `references/` are still readable. |
 
-# caveman — output token compression (scoped use, see CLAUDE.md §6)
-curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash
-```
+[caveman](https://github.com/JuliusBrussee/caveman) is **not** installed: its documented install pipes a remote script into a shell, which the agent will not execute. Run it yourself if you want the CLI. Its intent — spend fewer tokens — is instead implemented inside the product's Gemini layer (reasoning off for extraction tasks, terse prompts, schema-pinned output, batching, and the `CategoryMapping` cache), which is where the real token cost lives.
 
-The design system is generated once at the start of Phase 1 and persisted to `design-system/MASTER.md`, which is binding for all UI work. caveman runs in `lite` mode for routine output and commit messages only — founder-facing explanations and confirmations always stay in plain language, and `/caveman-compress` is banned on `CLAUDE.md` and `README.md` (CLAUDE.md §6).
+The design system is generated once and persisted to `design-system/MASTER.md`, which is binding for all UI work; **do not regenerate it**. `/caveman-compress` is banned on `CLAUDE.md` and `README.md` (CLAUDE.md §6).
 
 ## Deployment
 
