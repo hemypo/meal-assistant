@@ -70,3 +70,42 @@ export function longDate(iso: string): string {
 export function weekRangeLabel(mondayIso: string): string {
   return `${longDate(mondayIso)} — ${longDate(addDays(mondayIso, 6))}`;
 }
+
+/** «2 авг» — compact axis label for charts. */
+export function shortDate(iso: string): string {
+  const date = new Date(`${iso}T00:00:00.000Z`);
+  return `${date.getUTCDate()} ${MONTHS_GENITIVE[date.getUTCMonth()].slice(0, 3)}`;
+}
+
+const MONTHS_NOMINATIVE = [
+  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+];
+
+/** First day of the month containing `iso`. */
+export function startOfMonth(iso: string): string {
+  const date = new Date(`${iso}T00:00:00.000Z`);
+  return toIso(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)));
+}
+
+/** Last day of the month containing `iso` (day 0 of the next month). */
+export function endOfMonth(iso: string): string {
+  const date = new Date(`${iso}T00:00:00.000Z`);
+  return toIso(
+    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)),
+  );
+}
+
+/** Shift by whole months, clamped to the target month's length. */
+export function addMonths(iso: string, months: number): string {
+  const date = new Date(`${iso}T00:00:00.000Z`);
+  return toIso(
+    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1)),
+  );
+}
+
+/** «Август 2026» for the PeriodNav label. */
+export function monthLabel(iso: string): string {
+  const date = new Date(`${iso}T00:00:00.000Z`);
+  return `${MONTHS_NOMINATIVE[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+}

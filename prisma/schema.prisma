@@ -13,6 +13,7 @@ model User {
   passwordHash     String?
   name             String?
   kcalTarget       Int               @default(2000) // drives the DayCard kcal ring
+  weightGoalKg     Decimal           @default(76.0) // drives the goal line and «До цели»
   createdAt        DateTime          @default(now())
   products         Product[]
   categoryMappings CategoryMapping[]
@@ -20,6 +21,7 @@ model User {
   mealEntries      MealPlanEntry[]
   receipts         Receipt[]
   expenses         Expense[]
+  weightEntries    WeightEntry[]
 }
 
 // ------- Module 1: Inventory / Shopping list -------
@@ -172,4 +174,17 @@ model Expense {
   receipt   Receipt? @relation(fields: [receiptId], references: [id])
 
   @@index([userId, date])
+}
+
+// ------- Module 5: Weight tracking -------
+
+model WeightEntry {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date     DateTime @db.Date
+  weightKg Decimal
+
+  // One entry per day — the form upserts rather than appending duplicates.
+  @@unique([userId, date])
 }

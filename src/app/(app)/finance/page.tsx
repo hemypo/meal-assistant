@@ -1,13 +1,5 @@
-import { BarChart3 } from "lucide-react";
-import { PhasePlaceholder } from "@/components/PhasePlaceholder";
+import { FinanceView } from "@/components/finance/FinanceView";
 
 export default function FinancePage() {
-  return (
-    <PhasePlaceholder
-      kicker="04 · Деньги"
-      title="Финансы"
-      phase="фазе 5"
-      icon={BarChart3}
-    />
-  );
+  return <FinanceView />;
 }

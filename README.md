@@ -52,8 +52,8 @@ Receipt confirmed ←─ receipt scan (photo/text) ←─ you shop
 | 12 | Meal calendar (real dates) + daily КБЖУ totals | §4 | 3 | ✅ |
 | 13 | Receipt: photo + text → draft → edit → atomic confirm | §9.1 | 4 | ✅ |
 | 14 | ~~Receipt: QR / fiscal-data API~~ — **removed from scope** 2026-08-03 | — | — | ❌ |
-| 15 | Manual expenses + analytics charts | §5 | 5 | ⬜ |
-| 16 | Weight tracking + progress chart | §5 | 5 | ⬜ |
+| 15 | Manual expenses + analytics charts | §5 | 5 | ✅ |
+| 16 | Weight tracking + progress chart | §5 | 5 | ✅ |
 | 17 | PWA manifest, Sentry, empty/error states, cleanup cron, backup test | §10 P6 | 6 | ⬜ |
 | 18 | Family sharing, barcode scan, reminders, goals, native apps, offline | §10 | v2 | ⏸ |
 
