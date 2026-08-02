@@ -1,26 +1,161 @@
 @import "tailwindcss";
 
+/* Design tokens — design-system/MASTER.md §3. No raw hex in components. */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0c10;
+  --card: #12151c;
+  --foreground: #eef2f8;
+  --muted: #191e27;
+  --muted-foreground: #8d97a8;
+  --border: #272e3a;
+  --primary: #5b9eff;
+  --primary-strong: #7db3ff;
+  --primary-foreground: #06101f;
+  --secondary: #fbbf24;
+  --accent: #34d399;
+  --accent-strong: #34d399;
+  --destructive: #f87171;
+  --ring: #5b9eff;
+  --inverse-bg: #eef2f8;
+  --inverse-fg: #0f172a;
+
+  --primary-soft: rgba(91, 158, 255, 0.14);
+  --primary-faint: rgba(91, 158, 255, 0.09);
+  --secondary-soft: rgba(251, 191, 36, 0.15);
+  --accent-soft: rgba(52, 211, 153, 0.15);
+  --destructive-soft: rgba(248, 113, 113, 0.14);
+
+  --kcal: #5b9eff;
+  --kcal-soft: rgba(91, 158, 255, 0.16);
+  --protein: #22d3ee;
+  --protein-soft: rgba(34, 211, 238, 0.16);
+  --protein-strong: #67e8f9;
+  --fat: #eab308;
+  --fat-soft: rgba(234, 179, 8, 0.18);
+  --fat-strong: #e5c355;
+  --carbs: #fb923c;
+  --carbs-soft: rgba(249, 115, 22, 0.16);
+  --carbs-strong: #f4a263;
+  --sage: #7e96bd;
+  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Specified light variant «Терракота» — MASTER.md §3.1a. Not switchable in MVP. */
+.light {
+  --background: #fffbeb;
+  --card: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f8f2f0;
+  --muted-foreground: #64748b;
+  --border: #f2e6e2;
+  --primary: #9a3412;
+  --primary-strong: #7c2d12;
+  --primary-foreground: #ffffff;
+  --primary-soft: rgba(154, 52, 18, 0.1);
+  --primary-faint: rgba(154, 52, 18, 0.07);
+  --ring: #9a3412;
+  --kcal: #9a3412;
+  --kcal-soft: rgba(154, 52, 18, 0.12);
+  --secondary: #c2410c;
+  --secondary-soft: rgba(194, 64, 12, 0.12);
+  --accent: #059669;
+  --accent-strong: #047857;
+  --accent-soft: rgba(5, 150, 105, 0.12);
+  --destructive: #dc2626;
+  --destructive-soft: rgba(220, 38, 38, 0.08);
+  --protein: #2563eb;
+  --protein-strong: #1d4ed8;
+  --protein-soft: rgba(37, 99, 235, 0.12);
+  --fat: #eab308;
+  --fat-strong: #854d0e;
+  --fat-soft: rgba(234, 179, 8, 0.16);
+  --carbs: #f97316;
+  --carbs-strong: #b45309;
+  --carbs-soft: rgba(249, 115, 22, 0.14);
+  --sage: #6b7b3c;
+  --inverse-bg: #0f172a;
+  --inverse-fg: #ffffff;
+  --shadow-soft: 0 8px 32px rgba(15, 23, 42, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-card: var(--card);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-faint: var(--primary-faint);
+  --color-secondary: var(--secondary);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-ring: var(--ring);
+  --color-inverse-bg: var(--inverse-bg);
+  --color-inverse-fg: var(--inverse-fg);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-manrope);
+  --shadow-soft: var(--shadow-soft);
+  --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), system-ui, sans-serif;
+}
+
+/* Money, КБЖУ, dates, counts — MASTER.md §3.2 */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* MASTER.md §3.5 — motion is transform/opacity only, and fully disabled on request. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes screen-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-screen-enter {
+  animation: screen-enter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }

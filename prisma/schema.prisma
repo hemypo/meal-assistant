@@ -8,9 +8,34 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   passwordHash String?
   name         String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
+  products     Product[]
+}
+
+// ------- Module 1: Inventory / Shopping list -------
+
+enum ProductStatus {
+  IN_STOCK // «В наличии»
+  TO_BUY // «Надо купить»
+}
+
+model Product {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  category  String        @default("Другое")
+  status    ProductStatus @default(TO_BUY)
+  quantity  Decimal       @default(1)
+  unit      String        @default("шт")
+  estPrice  Decimal?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, category])
 }
