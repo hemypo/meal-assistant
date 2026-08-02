@@ -109,12 +109,20 @@ describe("token discipline", () => {
     }
   });
 
-  it("runs extraction tasks without reasoning, on the cheap tier", () => {
-    // Every Phase 2 task is extraction-shaped; reasoning would cost ~4x tokens.
+  it("runs every task reasoning-off — measured cheaper AND more accurate", () => {
+    // Extraction: 649 -> 165 tokens. Recipe generation: 2345 -> 735 tokens with
+    // a 21x smaller КБЖУ arithmetic error. Revisit per-task if a future task
+    // measures better with reasoning on.
     for (const def of Object.values(TASKS)) {
       expect(def.reasoning).toBe(false);
-      expect(def.tier).toBe("cheap");
     }
+  });
+
+  it("keeps classification on the cheap tier and generation on main", () => {
+    expect(TASKS.categorize.tier).toBe("cheap");
+    expect(TASKS.parse_bulk_list.tier).toBe("cheap");
+    expect(TASKS.estimate_kbju.tier).toBe("cheap");
+    expect(TASKS.generate_recipe.tier).toBe("main");
   });
 
   it("charges bulk parsing a heavier rate-limit weight than single fields", () => {

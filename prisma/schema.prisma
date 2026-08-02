@@ -12,9 +12,12 @@ model User {
   email            String            @unique
   passwordHash     String?
   name             String?
+  kcalTarget       Int               @default(2000) // drives the DayCard kcal ring
   createdAt        DateTime          @default(now())
   products         Product[]
   categoryMappings CategoryMapping[]
+  recipes          Recipe[]
+  mealEntries      MealPlanEntry[]
 }
 
 // ------- Module 1: Inventory / Shopping list -------
@@ -52,4 +55,62 @@ model CategoryMapping {
   category       String
 
   @@unique([userId, normalizedName])
+}
+
+// ------- Module 2: Recipes & meal calendar -------
+
+enum RecipeSource {
+  AI
+  MANUAL
+}
+
+model Recipe {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  steps       Json // string[] — пошаговая инструкция
+  calories    Int?
+  proteinG    Int?
+  fatG        Int?
+  carbsG      Int?
+  cookTimeMin Int?
+  source      RecipeSource
+  isSaved     Boolean            @default(false) // «Мои рецепты» = isSaved: true
+  createdAt   DateTime           @default(now())
+  ingredients RecipeIngredient[]
+  mealEntries MealPlanEntry[]
+
+  @@index([userId, isSaved])
+}
+
+model RecipeIngredient {
+  id         String   @id @default(cuid())
+  recipeId   String
+  recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  name       String
+  amount     Decimal
+  unit       String   @default("г")
+  wasInStock Boolean  @default(true) // available at generation time?
+  estPrice   Decimal? // filled for missing ingredients
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model MealPlanEntry {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date     DateTime @db.Date // real dates, rendered as a week view
+  mealType MealType
+  recipeId String
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, mealType, recipeId])
+  @@index([userId, date])
 }

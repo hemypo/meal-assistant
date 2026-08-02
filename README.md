@@ -45,11 +45,11 @@ Receipt confirmed ←─ receipt scan (photo/text/QR) ←─ you shop
 | 5 | `CategoryMapping` learned-category cache | §6.5 | 2 | ✅ |
 | 6 | Bulk add: paste list → AI parse → preview → confirm | §5, §6 | 2 | ✅ |
 | 7 | `<AiAssist>` component in product form (category, unit, price) | §6.4 | 2 | ✅ |
-| 8 | AI recipe generation from stock + wishes, КБЖУ, cook time | §9.2 | 3 | ⬜ |
-| 9 | Manual recipe entry with AI КБЖУ assist | §6.4 | 3 | ⬜ |
-| 10 | «Мои рецепты» base (`isSaved`) | §4 | 3 | ⬜ |
-| 11 | Missing ingredients → shopping list with est. prices | §9.2 | 3 | ⬜ |
-| 12 | Meal calendar (real dates) + daily КБЖУ totals | §4 | 3 | ⬜ |
+| 8 | AI recipe generation from stock + wishes, КБЖУ, cook time | §9.2 | 3 | ✅ |
+| 9 | Manual recipe entry with AI КБЖУ assist | §6.4 | 3 | ✅ |
+| 10 | «Мои рецепты» base (`isSaved`) | §4 | 3 | ✅ |
+| 11 | Missing ingredients → shopping list with est. prices | §9.2 | 3 | ✅ |
+| 12 | Meal calendar (real dates) + daily КБЖУ totals | §4 | 3 | ✅ |
 | 13 | Receipt: photo + text → draft → edit → atomic confirm | §9.1 | 4 | ⬜ |
 | 14 | Receipt: QR / fiscal-data API + photo fallback | §9.1a | 4b | ⬜ |
 | 15 | Manual expenses + analytics charts | §5 | 5 | ⬜ |

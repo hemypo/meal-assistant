@@ -54,3 +54,53 @@ export const estimatePriceSchema = {
   properties: { price: { type: "NUMBER" } },
   required: ["price"],
 } as const;
+
+/** generate_recipe: in-stock list + wishes -> a full recipe with КБЖУ */
+export const generateRecipeSchema = {
+  type: "OBJECT",
+  properties: {
+    title: { type: "STRING" },
+    steps: { type: "ARRAY", items: { type: "STRING" } },
+    calories: { type: "INTEGER" },
+    proteinG: { type: "INTEGER" },
+    fatG: { type: "INTEGER" },
+    carbsG: { type: "INTEGER" },
+    cookTimeMin: { type: "INTEGER" },
+    ingredients: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          name: { type: "STRING" },
+          amount: { type: "NUMBER" },
+          unit: UNIT_ENUM,
+          wasInStock: { type: "BOOLEAN" },
+          estPrice: { type: "NUMBER" },
+        },
+        required: ["name", "amount", "unit", "wasInStock"],
+      },
+    },
+  },
+  required: [
+    "title",
+    "steps",
+    "calories",
+    "proteinG",
+    "fatG",
+    "carbsG",
+    "cookTimeMin",
+    "ingredients",
+  ],
+} as const;
+
+/** estimate_kbju: manual recipe ingredients -> КБЖУ estimate */
+export const estimateKbjuSchema = {
+  type: "OBJECT",
+  properties: {
+    calories: { type: "INTEGER" },
+    proteinG: { type: "INTEGER" },
+    fatG: { type: "INTEGER" },
+    carbsG: { type: "INTEGER" },
+  },
+  required: ["calories", "proteinG", "fatG", "carbsG"],
+} as const;

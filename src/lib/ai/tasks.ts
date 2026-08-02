@@ -3,7 +3,9 @@ import { z } from "zod";
 import { ai, generationConfig, MODELS, type ModelTier } from "./client";
 import {
   categorizeSchema,
+  estimateKbjuSchema,
   estimatePriceSchema,
+  generateRecipeSchema,
   parseBulkListSchema,
   suggestUnitSchema,
 } from "./schemas";
@@ -95,11 +97,96 @@ const estimatePrice = {
   { price: number }
 >;
 
+const kbjuOutput = {
+  calories: z.number().int().nonnegative().max(20000),
+  proteinG: z.number().int().nonnegative().max(2000),
+  fatG: z.number().int().nonnegative().max(2000),
+  carbsG: z.number().int().nonnegative().max(2000),
+};
+
+/**
+ * Recipe generation. Measured reasoning on vs off over 3 prompts:
+ * on = 7843ms / 2345 tok / 21 kcal internal mismatch;
+ * off = 2574ms / 735 tok / 1 kcal mismatch. Off wins on every axis, so this
+ * generative task runs reasoning-off too (CLAUDE.md §7, 2026-08-02).
+ */
+const generateRecipe = {
+  tier: "main",
+  reasoning: false,
+  weight: 4,
+  input: z.object({
+    inStock: z.array(z.string()).max(200),
+    wishes: z.string().trim().max(300).optional(),
+  }),
+  output: z.object({
+    title: z.string().min(1),
+    steps: z.array(z.string().min(1)).min(1),
+    cookTimeMin: z.number().int().positive().max(1440),
+    ...kbjuOutput,
+    ingredients: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          amount: z.number().positive(),
+          unit: z.enum(UNITS),
+          wasInStock: z.boolean(),
+          estPrice: z.number().nonnegative().max(999999).optional(),
+        }),
+      )
+      .min(1),
+  }),
+  responseSchema: generateRecipeSchema,
+  prompt: ({ inStock, wishes }) =>
+    `В наличии: ${inStock.length ? inStock.join(", ") : "ничего"}.\n` +
+    (wishes ? `Пожелания: ${wishes}.\n` : "") +
+    `Придумай один рецепт, преимущественно из имеющегося. Единицы: ${unitList}. ` +
+    `wasInStock=false для недостающих ингредиентов, для них укажи estPrice в рублях. ` +
+    `Шаги — короткие, по одному действию. КБЖУ на всё блюдо.`,
+} satisfies TaskDef<
+  { inStock: string[]; wishes?: string },
+  {
+    title: string;
+    steps: string[];
+    cookTimeMin: number;
+    calories: number;
+    proteinG: number;
+    fatG: number;
+    carbsG: number;
+    ingredients: {
+      name: string;
+      amount: number;
+      unit: string;
+      wasInStock: boolean;
+      estPrice?: number;
+    }[];
+  }
+>;
+
+/** КБЖУ assist for manually entered recipes. */
+const estimateKbju = {
+  tier: "cheap",
+  reasoning: false,
+  weight: 1,
+  input: z.object({
+    title: z.string().trim().max(200).optional(),
+    ingredients: z.array(z.string().trim().min(1)).min(1).max(50),
+  }),
+  output: z.object(kbjuOutput),
+  responseSchema: estimateKbjuSchema,
+  prompt: ({ title, ingredients }) =>
+    `Оцени КБЖУ на всё блюдо${title ? ` «${title}»` : ""} из ингредиентов:\n${ingredients.join("\n")}`,
+} satisfies TaskDef<
+  { title?: string; ingredients: string[] },
+  { calories: number; proteinG: number; fatG: number; carbsG: number }
+>;
+
 export const TASKS = {
   categorize,
   parse_bulk_list: parseBulkList,
   suggest_unit: suggestUnit,
   estimate_price: estimatePrice,
+  generate_recipe: generateRecipe,
+  estimate_kbju: estimateKbju,
 } as const;
 
 export type TaskName = keyof typeof TASKS;
