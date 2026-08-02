@@ -38,9 +38,9 @@ Receipt confirmed ←─ receipt scan (photo/text/QR) ←─ you shop
 
 | # | Feature | Plan ref | Phase | Status |
 |---|---|---|---|---|
-| 1 | Auth (Auth.js, argon2) + registration locked to `ALLOWED_EMAIL` | §3, §7 | 1 | ⬜ |
-| 2 | Product CRUD, two statuses, quantity/unit/price | §4, §5 | 1 | ⬜ |
-| 3 | Category grouping + alphabetical sort; status toggle | §4 | 1 | ⬜ |
+| 1 | Auth (Auth.js, argon2) + registration locked to `ALLOWED_EMAIL` | §3, §7 | 1 | ✅ |
+| 2 | Product CRUD, two statuses, quantity/unit/price | §4, §5 | 1 | ✅ |
+| 3 | Category grouping + alphabetical sort; status toggle | §4 | 1 | ✅ |
 | 4 | AI gateway `/api/ai/assist` + task registry + rate limiting | §6 | 2 | ⬜ |
 | 5 | `CategoryMapping` learned-category cache | §6.5 | 2 | ⬜ |
 | 6 | Bulk add: paste list → AI parse → preview → confirm | §5, §6 | 2 | ⬜ |
@@ -59,7 +59,7 @@ Receipt confirmed ←─ receipt scan (photo/text/QR) ←─ you shop
 
 ## Tech stack
 
-Next.js 15 (App Router) + TypeScript · PostgreSQL (Neon) + Prisma · Auth.js v5 · Zod · TanStack Query · Tailwind + shadcn/ui · Recharts · `@google/genai` (server-side only) · Vercel + Vercel Blob. Rationale and rejected alternatives: master plan §3.
+Next.js 16 (App Router) + TypeScript · PostgreSQL (Neon) + Prisma 7 · Auth.js v5 · Zod · TanStack Query · Tailwind + shadcn/ui · Recharts · `@google/genai` (server-side only) · Vercel + Vercel Blob. Rationale and rejected alternatives: master plan §3; version deviations logged in `CLAUDE.md` §7.
 
 ## Setup
 
@@ -73,7 +73,7 @@ npx prisma migrate dev
 npm run dev                  # http://localhost:3000
 ```
 
-`.env` variables (all server-only, see CLAUDE.md §5): `DATABASE_URL`, `AUTH_SECRET`, `ALLOWED_EMAIL`, `GEMINI_API_KEY`, `RECEIPT_API_KEY` (Phase 4b only).
+`.env` variables (all server-only, see CLAUDE.md §5): `DATABASE_URL` (Neon **pooled** string), `DIRECT_URL` (same endpoint **without** `-pooler`, used by Prisma migrations), `AUTH_SECRET`, `ALLOWED_EMAIL`, `GEMINI_API_KEY` (Phase 2+), `RECEIPT_API_KEY` (Phase 4b only).
 
 ## Development toolchain — Claude Code + ECC (one-time)
 
