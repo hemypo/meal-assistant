@@ -41,7 +41,7 @@ This file is a living document that you (Claude Code) maintain.
 
 ## 2. What we're building
 
-An AI-powered PWA for one user: pantry & shopping-list management, AI meal planning with КБЖУ, receipt scanning (photo / text / QR), expense analytics, and weight tracking — one closed household loop.
+An AI-powered PWA for one user: pantry & shopping-list management, AI meal planning with КБЖУ, receipt scanning (photo / text), expense analytics, and weight tracking — one closed household loop.
 Full spec: `docs/meal-assistant-development-plan.md`. Feature status: `README.md` → Reconciliation.
 
 ---
@@ -59,7 +59,7 @@ Next.js 16 (App Router) + TypeScript · PostgreSQL (Neon) + Prisma · Auth.js v5
 - Every AI response uses a JSON `responseSchema` — no free-text parsing.
 - Routes are thin: session check → Zod validation → call a `src/server/` service → return JSON. Business logic lives only in `src/server/`.
 - Every database query is scoped by `userId`.
-- Receipt pipeline: any source (`PHOTO | TEXT | QR`) → `DRAFT` → user review → one atomic Prisma `$transaction` on confirm. No other path may mutate inventory from a receipt.
+- Receipt pipeline: any source (`PHOTO | TEXT`) → `DRAFT` → user review → one atomic Prisma `$transaction` on confirm. No other path may mutate inventory from a receipt.
 - Meal plan stores real calendar dates, never abstract weekdays.
 - AI never silently mutates user data — every suggestion is accepted by an explicit user action.
 - Money = `Decimal`; КБЖУ = `Int`; units only from the fixed list (`шт | г | кг | мл | л | упак`).
@@ -68,7 +68,7 @@ Next.js 16 (App Router) + TypeScript · PostgreSQL (Neon) + Prisma · Auth.js v5
 
 ## 5. Security invariants (non-negotiable)
 
-- `GEMINI_API_KEY`, `RECEIPT_API_KEY`, `AUTH_SECRET`, `DATABASE_URL` are server-only. Never `NEXT_PUBLIC_`-prefixed, never logged, never printed into chat output, never written into any tracked file.
+- `GEMINI_API_KEY`, `AUTH_SECRET`, `DATABASE_URL`, `DIRECT_URL`, `BLOB_READ_WRITE_TOKEN` are server-only. Never `NEXT_PUBLIC_`-prefixed, never logged, never printed into chat output, never written into any tracked file.
 - `.env` stays in `.gitignore`; `.env.example` contains variable names with empty values only.
 - Registration succeeds only when the email equals `ALLOWED_EMAIL`.
 - Every API route validates input with Zod. All `/api/ai/*` routes are rate-limited.
@@ -152,9 +152,15 @@ These four principles govern how every task in steps 1–6 above is executed. Fo
 
 - 2026-08-03 — **QR receipt scanning removed from the project entirely (founder instruction).** This reverses the 2026-08-02 entry above ("Receipt sources `PHOTO | TEXT | QR`… QR ships as Phase 4b") and master-plan §12 item 3, both of which had QR as a confirmed founder decision. Removed: the `QR` value from `ReceiptSource`, `Receipt.qrRaw`, and `RECEIPT_API_KEY` from `.env`/`.env.example` (migration `20260803001631_remove_qr_receipt_source`; verified beforehand that no row used `source='QR'` and no `qrRaw` data existed, so nothing was lost). Postgres cannot drop an enum value in place, so the migration swaps the type — written by hand because `prisma migrate dev` refuses destructive changes non-interactively. Docs updated so the scope cannot creep back: master plan §2.3, §4 schema, §5 API, §7 checklist, §9.1a (section retired), §10 Phase 4b (cut), §11 risk 7 (retired), §12 item 3; README loop diagram, module 3 text, row 14, env list. **No implementation code was deleted — Phase 4b was never built**, so this was scaffolding and scope only. Consequence: the project now has no third-party fiscal-data dependency, and photo + pasted text are the only ways a receipt enters the system.
 
+- 2026-08-03 — **Founder confirmed the §§2/4/5 edits** removing QR (§1 requires explicit consent for §§0–6): §2 now says "receipt scanning (photo / text)", §4's pipeline reads `PHOTO | TEXT`, and §5's server-only list drops `RECEIPT_API_KEY` and gains `BLOB_READ_WRITE_TOKEN` + `DIRECT_URL` — the latter two were real secrets missing from that list. QR is now absent from the entire project.
+- 2026-08-03 — **Phase gate reinstated at the founder's instruction:** phases no longer run back-to-back autonomously. Each phase needs explicit consent before it starts; finish, report, stop. Recorded as a banner at the top of §8 so a cold session cannot miss it. This narrows the earlier "start from stage 1 to the end without my participation" grant.
+
 ---
 
 ## 8. Working Context (rewrite freely at each milestone)
+
+> **⛔ PHASE GATE (founder instruction, 2026-08-03).** Phase 5 is authorised. **Do NOT start Phase 6 — or any phase after it — without the founder's explicit consent in that session.** Finish the authorised phase, report, then stop and ask. This overrides any earlier "run to the end without my participation" instruction.
+
 
 - **Current phase:** Phase 4 — Receipt scanner (photo + text) ✅ **COMPLETE** (both accept criteria verified). **Phase 4b (QR) no longer exists — cut 2026-08-03, see §7.** Next up: Phase 5 — Finance analytics + weight.
 - **Last completed:** Phase 4 shipped. `Receipt`/`ReceiptItem`/`Expense` + `ReceiptStatus`/`ReceiptSource` enums (migration `20260802133833_add_receipts_and_expenses`); `parse_receipt` task handling **both** Gemini Vision (inline base64) and pasted text through one schema — the task runner now supports image parts; private Vercel Blob store for images with a 5 MB / jpeg-png-webp-heic guard and client-side downscale to 1600px; the **atomic confirm** in `src/server/receipts.ts`; receipts UI per MASTER.md (300px history + editor split, inline-edit draft rows, AI draft note, empty-draft state, ConfirmBar). README row 13 → ✅. **82 tests green**, lint clean, build green, bundle scan clean.
