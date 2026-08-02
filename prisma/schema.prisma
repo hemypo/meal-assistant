@@ -8,12 +8,13 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String?
-  name         String?
-  createdAt    DateTime  @default(now())
-  products     Product[]
+  id               String            @id @default(cuid())
+  email            String            @unique
+  passwordHash     String?
+  name             String?
+  createdAt        DateTime          @default(now())
+  products         Product[]
+  categoryMappings CategoryMapping[]
 }
 
 // ------- Module 1: Inventory / Shopping list -------
@@ -38,4 +39,17 @@ model Product {
 
   @@index([userId, status])
   @@index([userId, category])
+}
+
+// Learned name→category cache: each product name is classified by AI once, ever.
+// This is the cost-control table (master plan §6.5) — bulk-adding N products
+// triggers one AI call for unknown names only.
+model CategoryMapping {
+  id             String  @id @default(cuid())
+  userId         String?
+  user           User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  normalizedName String
+  category       String
+
+  @@unique([userId, normalizedName])
 }

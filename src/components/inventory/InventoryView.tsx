@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AddProductForm } from "./AddProductForm";
+import { BulkAddModal } from "./BulkAddModal";
 import { ProductPane } from "./ProductPane";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useToast } from "@/components/ui/Toast";
@@ -24,6 +25,7 @@ export function InventoryView() {
   const toast = useToast();
   const [tab, setTab] = useState<ProductStatus>("IN_STOCK");
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: KEY,
@@ -135,6 +137,19 @@ export function InventoryView() {
         status={tab}
         pending={create.isPending}
         onCreate={(input) => create.mutate(input)}
+        onOpenBulk={() => setBulkOpen(true)}
+      />
+
+      <BulkAddModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        status={tab}
+        onConfirmed={(count) => {
+          queryClient.invalidateQueries({ queryKey: KEY });
+          toast(
+            `Добавлено ${count} ${plural(count, "позиция", "позиции", "позиций")}`,
+          );
+        }}
       />
 
       {/* Mobile: segmented tabs. Desktop: both panes side by side (§4). */}

@@ -41,10 +41,10 @@ Receipt confirmed ←─ receipt scan (photo/text/QR) ←─ you shop
 | 1 | Auth (Auth.js, argon2) + registration locked to `ALLOWED_EMAIL` | §3, §7 | 1 | ✅ |
 | 2 | Product CRUD, two statuses, quantity/unit/price | §4, §5 | 1 | ✅ |
 | 3 | Category grouping + alphabetical sort; status toggle | §4 | 1 | ✅ |
-| 4 | AI gateway `/api/ai/assist` + task registry + rate limiting | §6 | 2 | ⬜ |
-| 5 | `CategoryMapping` learned-category cache | §6.5 | 2 | ⬜ |
-| 6 | Bulk add: paste list → AI parse → preview → confirm | §5, §6 | 2 | ⬜ |
-| 7 | `<AiAssist>` component in product form (category, unit, price) | §6.4 | 2 | ⬜ |
+| 4 | AI gateway `/api/ai/assist` + task registry + rate limiting | §6 | 2 | ✅ |
+| 5 | `CategoryMapping` learned-category cache | §6.5 | 2 | ✅ |
+| 6 | Bulk add: paste list → AI parse → preview → confirm | §5, §6 | 2 | ✅ |
+| 7 | `<AiAssist>` component in product form (category, unit, price) | §6.4 | 2 | ✅ |
 | 8 | AI recipe generation from stock + wishes, КБЖУ, cook time | §9.2 | 3 | ⬜ |
 | 9 | Manual recipe entry with AI КБЖУ assist | §6.4 | 3 | ⬜ |
 | 10 | «Мои рецепты» base (`isSaved`) | §4 | 3 | ⬜ |
