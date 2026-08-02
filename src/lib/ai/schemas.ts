@@ -93,6 +93,35 @@ export const generateRecipeSchema = {
   ],
 } as const;
 
+/**
+ * parse_receipt: a photo OR pasted text -> the same structured receipt.
+ * One schema for both sources (master plan §6.2) so the draft pipeline is
+ * identical regardless of how the receipt arrived.
+ */
+export const parseReceiptSchema = {
+  type: "OBJECT",
+  properties: {
+    store: { type: "STRING" },
+    purchasedAt: { type: "STRING" }, // YYYY-MM-DD
+    total: { type: "NUMBER" },
+    items: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          name: { type: "STRING" },
+          quantity: { type: "NUMBER" },
+          unit: UNIT_ENUM,
+          price: { type: "NUMBER" }, // line total, not unit price
+          category: CATEGORY_ENUM,
+        },
+        required: ["name", "quantity", "unit", "price"],
+      },
+    },
+  },
+  required: ["items"],
+} as const;
+
 /** estimate_kbju: manual recipe ingredients -> КБЖУ estimate */
 export const estimateKbjuSchema = {
   type: "OBJECT",

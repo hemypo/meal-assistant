@@ -50,7 +50,7 @@ Receipt confirmed ←─ receipt scan (photo/text/QR) ←─ you shop
 | 10 | «Мои рецепты» base (`isSaved`) | §4 | 3 | ✅ |
 | 11 | Missing ingredients → shopping list with est. prices | §9.2 | 3 | ✅ |
 | 12 | Meal calendar (real dates) + daily КБЖУ totals | §4 | 3 | ✅ |
-| 13 | Receipt: photo + text → draft → edit → atomic confirm | §9.1 | 4 | ⬜ |
+| 13 | Receipt: photo + text → draft → edit → atomic confirm | §9.1 | 4 | ✅ |
 | 14 | Receipt: QR / fiscal-data API + photo fallback | §9.1a | 4b | ⬜ |
 | 15 | Manual expenses + analytics charts | §5 | 5 | ⬜ |
 | 16 | Weight tracking + progress chart | §5 | 5 | ⬜ |

@@ -1,13 +1,5 @@
-import { Receipt } from "lucide-react";
-import { PhasePlaceholder } from "@/components/PhasePlaceholder";
+import { ReceiptsView } from "@/components/receipts/ReceiptsView";
 
 export default function ReceiptsPage() {
-  return (
-    <PhasePlaceholder
-      kicker="03 · Покупки"
-      title="Чеки"
-      phase="фазе 4"
-      icon={Receipt}
-    />
-  );
+  return <ReceiptsView />;
 }

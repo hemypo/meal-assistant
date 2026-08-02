@@ -7,6 +7,7 @@ import {
   estimatePriceSchema,
   generateRecipeSchema,
   parseBulkListSchema,
+  parseReceiptSchema,
   suggestUnitSchema,
 } from "./schemas";
 import { CATEGORIES, UNITS } from "@/lib/utils";
@@ -22,6 +23,13 @@ import { CATEGORIES, UNITS } from "@/lib/utils";
 const categoryList = CATEGORIES.join(", ");
 const unitList = UNITS.join(", ");
 
+/**
+ * A prompt is normally a plain string. Vision tasks return SDK `contents`
+ * parts instead, so a receipt photo can be sent as inline base64.
+ */
+type PromptPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+export type PromptContent = string | [{ parts: PromptPart[] }];
+
 type TaskDef<I, O> = {
   tier: ModelTier;
   /** false => thinkingBudget 0 on `main` (4x fewer tokens; see client.ts). */
@@ -31,7 +39,7 @@ type TaskDef<I, O> = {
   input: z.ZodType<I>;
   output: z.ZodType<O>;
   responseSchema: object;
-  prompt: (payload: I) => string;
+  prompt: (payload: I) => PromptContent;
 };
 
 const categorize = {
@@ -180,6 +188,87 @@ const estimateKbju = {
   { calories: number; proteinG: number; fatG: number; carbsG: number }
 >;
 
+const RECEIPT_RULES =
+  `Распознай кассовый чек. purchasedAt в формате ГГГГ-ММ-ДД. ` +
+  `price — сумма за всю позицию, не цена за единицу. Единицы: ${unitList}. Категории: ${categoryList}. ` +
+  `Не включай в items пакеты, скидки, бонусы и служебные строки. ` +
+  // The expense must equal what was actually paid, so the total is the printed
+  // ИТОГ — it may legitimately exceed the sum of items we kept.
+  `total — итоговая сумма чека РОВНО как напечатана (ИТОГ), даже если она больше суммы items.`;
+
+/**
+ * One task, two sources (master plan §6.2): a photo goes to Gemini Vision as
+ * inline base64, pasted text goes as plain text — the same responseSchema and
+ * the same downstream draft pipeline either way.
+ *
+ * Measured on a real receipt image: reasoning on = 6815ms / 2896 tok,
+ * off = 1272ms / 1320 tok, with identical item extraction. Off it is.
+ */
+const parseReceipt = {
+  tier: "main",
+  reasoning: false,
+  weight: 5,
+  input: z
+    .object({
+      imageBase64: z.string().min(1).optional(),
+      mimeType: z.string().min(1).optional(),
+      rawText: z.string().trim().min(1).max(10000).optional(),
+    })
+    .refine((v) => Boolean(v.imageBase64) !== Boolean(v.rawText), {
+      message: "Нужен либо снимок, либо текст",
+    }),
+  output: z.object({
+    store: z.string().optional(),
+    purchasedAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    total: z.number().nonnegative().max(9999999).optional(),
+    items: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          quantity: z.number().positive(),
+          unit: z.enum(UNITS),
+          price: z.number().nonnegative().max(999999),
+          category: z.enum(CATEGORIES).optional(),
+        }),
+      )
+      .min(1, "В чеке не найдено ни одной позиции"),
+  }),
+  responseSchema: parseReceiptSchema,
+  prompt: ({ imageBase64, mimeType, rawText }) =>
+    imageBase64
+      ? ([
+          {
+            parts: [
+              { text: RECEIPT_RULES },
+              {
+                inlineData: {
+                  mimeType: mimeType ?? "image/jpeg",
+                  data: imageBase64,
+                },
+              },
+            ],
+          },
+        ] as const satisfies PromptContent)
+      : `${RECEIPT_RULES}\n\n${rawText}`,
+} satisfies TaskDef<
+  { imageBase64?: string; mimeType?: string; rawText?: string },
+  {
+    store?: string;
+    purchasedAt?: string;
+    total?: number;
+    items: {
+      name: string;
+      quantity: number;
+      unit: string;
+      price: number;
+      category?: string;
+    }[];
+  }
+>;
+
 export const TASKS = {
   categorize,
   parse_bulk_list: parseBulkList,
@@ -187,6 +276,7 @@ export const TASKS = {
   estimate_price: estimatePrice,
   generate_recipe: generateRecipe,
   estimate_kbju: estimateKbju,
+  parse_receipt: parseReceipt,
 } as const;
 
 export type TaskName = keyof typeof TASKS;
@@ -211,7 +301,7 @@ export async function runTask<T extends TaskName>(
     throw new AiTaskError("Некорректные данные для ИИ-задачи");
   }
 
-  const response = await ai.models.generateContent({
+  const request = {
     model: MODELS[def.tier],
     contents: def.prompt(parsedInput.data as never),
     config: generationConfig({
@@ -219,7 +309,18 @@ export async function runTask<T extends TaskName>(
       responseSchema: def.responseSchema,
       reasoning: def.reasoning,
     }),
-  });
+  };
+
+  // Transient `fetch failed` errors were observed hitting the API in practice.
+  // One retry turns a user-visible failure into a slightly slower success.
+  // Only the call is retried — a schema-invalid response is a real failure and
+  // retrying it would just burn tokens.
+  let response;
+  try {
+    response = await ai.models.generateContent(request);
+  } catch {
+    response = await ai.models.generateContent(request);
+  }
 
   const text = response.text;
   if (!text) throw new AiTaskError("Пустой ответ от ИИ");

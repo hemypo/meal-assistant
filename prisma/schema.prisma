@@ -18,6 +18,8 @@ model User {
   categoryMappings CategoryMapping[]
   recipes          Recipe[]
   mealEntries      MealPlanEntry[]
+  receipts         Receipt[]
+  expenses         Expense[]
 }
 
 // ------- Module 1: Inventory / Shopping list -------
@@ -112,5 +114,64 @@ model MealPlanEntry {
   recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date, mealType, recipeId])
+  @@index([userId, date])
+}
+
+// ------- Module 3: Receipts -------
+
+enum ReceiptStatus {
+  DRAFT // parsed, awaiting user review
+  CONFIRMED // applied to inventory + expenses (atomic)
+}
+
+enum ReceiptSource {
+  PHOTO // Gemini Vision OCR
+  TEXT // pasted text → Gemini parse
+  QR // fiscal QR → receipt-data API (Phase 4b)
+}
+
+model Receipt {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      ReceiptStatus @default(DRAFT)
+  source      ReceiptSource @default(PHOTO)
+  store       String?
+  purchasedAt DateTime?
+  total       Decimal?
+  imageUrl    String?
+  rawText     String?
+  qrRaw       String? // raw QR string, Phase 4b
+  createdAt   DateTime      @default(now())
+  items       ReceiptItem[]
+  expense     Expense?
+
+  @@index([userId, status])
+}
+
+model ReceiptItem {
+  id        String  @id @default(cuid())
+  receiptId String
+  receipt   Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  name      String
+  category  String?
+  quantity  Decimal @default(1)
+  unit      String  @default("шт")
+  price     Decimal
+}
+
+// ------- Module 4: Finance -------
+
+model Expense {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  category  String // «Продукты», «Бытовое», «Другое», ...
+  amount    Decimal
+  note      String?
+  receiptId String?  @unique
+  receipt   Receipt? @relation(fields: [receiptId], references: [id])
+
   @@index([userId, date])
 }
