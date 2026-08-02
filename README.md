@@ -6,7 +6,7 @@
 Products in stock ─→ AI recipes + КБЖУ ─→ missing items → shopping list
         ▲                                            │
         │                                            ▼
-Receipt confirmed ←─ receipt scan (photo/text/QR) ←─ you shop
+Receipt confirmed ←─ receipt scan (photo/text) ←─ you shop
         │
         └─→ expense recorded → finance analytics    (+ weight tracking)
 ```
@@ -26,7 +26,7 @@ Receipt confirmed ←─ receipt scan (photo/text/QR) ←─ you shop
 
 **2. 🧑‍🍳 Рацион.** Week meal calendar (real dates, rendered Mon–Sun × Завтрак/Обед/Ужин/Перекус) with daily КБЖУ totals. Two recipe modes: «Шеф-повар Gemini» generates a step-by-step recipe from what's currently in stock, honoring free-text wishes, with computed КБЖУ and cooking time, flagging missing ingredients (one tap sends them to the shopping list with estimated prices); «Свой рецепт» is manual entry with AI assistance on КБЖУ estimation. Any recipe can be saved to «Мои рецепты» and re-scheduled later without regeneration.
 
-**3. 🧾 Чеки.** Three input sources: photo of a paper receipt (Gemini Vision), pasted text, and fiscal QR-code lookup (exact item data via a receipt-data API; photo remains the universal fallback). Every parse lands as an editable **draft**; confirming runs one atomic transaction that moves items into «В наличии» and records the expense. Nothing is ever applied silently.
+**3. 🧾 Чеки.** Two input sources: photo of a paper receipt (Gemini Vision) and pasted text — both parsed through the same schema. Every parse lands as an editable **draft**; confirming runs one atomic transaction that moves items into «В наличии» and records the expense. Nothing is ever applied silently.
 
 **4. 📊 Финансы.** Expenses recorded automatically from confirmed receipts plus manual entries; charts for monthly spend, category breakdown, and trend.
 
@@ -51,7 +51,7 @@ Receipt confirmed ←─ receipt scan (photo/text/QR) ←─ you shop
 | 11 | Missing ingredients → shopping list with est. prices | §9.2 | 3 | ✅ |
 | 12 | Meal calendar (real dates) + daily КБЖУ totals | §4 | 3 | ✅ |
 | 13 | Receipt: photo + text → draft → edit → atomic confirm | §9.1 | 4 | ✅ |
-| 14 | Receipt: QR / fiscal-data API + photo fallback | §9.1a | 4b | ⬜ |
+| 14 | ~~Receipt: QR / fiscal-data API~~ — **removed from scope** 2026-08-03 | — | — | ❌ |
 | 15 | Manual expenses + analytics charts | §5 | 5 | ⬜ |
 | 16 | Weight tracking + progress chart | §5 | 5 | ⬜ |
 | 17 | PWA manifest, Sentry, empty/error states, cleanup cron, backup test | §10 P6 | 6 | ⬜ |
@@ -73,7 +73,7 @@ npx prisma migrate dev
 npm run dev                  # http://localhost:3000
 ```
 
-`.env` variables (all server-only, see CLAUDE.md §5): `DATABASE_URL` (Neon **pooled** string), `DIRECT_URL` (same endpoint **without** `-pooler`, used by Prisma migrations), `AUTH_SECRET`, `ALLOWED_EMAIL`, `GEMINI_API_KEY` (Phase 2+), `RECEIPT_API_KEY` (Phase 4b only).
+`.env` variables (all server-only, see CLAUDE.md §5): `DATABASE_URL` (Neon **pooled** string), `DIRECT_URL` (same endpoint **without** `-pooler`, used by Prisma migrations), `AUTH_SECRET`, `ALLOWED_EMAIL`, `GEMINI_API_KEY`, `BLOB_READ_WRITE_TOKEN` (receipt images).
 
 ## Development toolchain — Claude Code + ECC (one-time)
 

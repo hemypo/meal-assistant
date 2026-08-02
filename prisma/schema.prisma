@@ -127,7 +127,6 @@ enum ReceiptStatus {
 enum ReceiptSource {
   PHOTO // Gemini Vision OCR
   TEXT // pasted text → Gemini parse
-  QR // fiscal QR → receipt-data API (Phase 4b)
 }
 
 model Receipt {
@@ -141,7 +140,6 @@ model Receipt {
   total       Decimal?
   imageUrl    String?
   rawText     String?
-  qrRaw       String? // raw QR string, Phase 4b
   createdAt   DateTime      @default(now())
   items       ReceiptItem[]
   expense     Expense?

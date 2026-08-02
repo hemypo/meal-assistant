@@ -1,6 +1,6 @@
 # Smart Meal & Household Assistant — Architecture & Development Plan
 
-**Version 1.1 — produced by a four-role review process (Architect / Engineer / Reviewer / Optimizer); updated after founder Q&A: platform = PWA, single user, receipts = photo + text + FNS QR.**
+**Version 1.2 — produced by a four-role review process (Architect / Engineer / Reviewer / Optimizer); updated after founder Q&A: platform = PWA, single user, receipts = photo + text. (v1.2, 2026-08-03: FNS QR removed from scope — see §9.1a and `CLAUDE.md` §7.)**
 This document is written for a founder with no prior development experience. Each phase in the roadmap is scoped so it can be handed to an AI coding assistant (e.g. Claude Code) as a self-contained work order.
 
 ---
@@ -28,7 +28,7 @@ Confirmed with the founder (2026-08-02):
 
 1. **Platform:** responsive web app installable as a PWA (home-screen icon on the phone). Native apps deferred. ✅ confirmed
 2. **Users:** single user. The schema stays multi-user-ready (`userId` on every table), but **registration is locked**: signup succeeds only for the email set in the `ALLOWED_EMAIL` env variable. Auth remains mandatory — the app is on the public internet with personal data and an AI key behind it. ✅ confirmed
-3. **Receipt input:** all three sources — photo of a paper receipt (Gemini Vision), pasted text, and **FNS QR-code lookup** (exact fiscal data, highest quality; see §9.1a). Photo remains the universal fallback. ✅ confirmed
+3. **Receipt input:** two sources — photo of a paper receipt (Gemini Vision) and pasted text, both parsed through one schema. *(FNS QR-code lookup was originally confirmed here and **removed from scope 2026-08-03** on the founder's instruction.)*
 4. **Language:** UI in Russian, code and identifiers in English.
 5. **Budget:** free/near-free infrastructure (Vercel + Neon free tiers, Gemini pay-as-you-go, expected < $5/month at personal usage).
 
@@ -187,7 +187,6 @@ enum ReceiptStatus {
 enum ReceiptSource {
   PHOTO       // Gemini Vision OCR
   TEXT        // pasted text → Gemini parse
-  QR          // fiscal QR → receipt-data API (exact items, no OCR)
 }
 
 model Receipt {
@@ -201,7 +200,6 @@ model Receipt {
   total       Decimal?
   imageUrl    String?
   rawText     String?
-  qrRaw       String?       // raw QR string: t=...&s=...&fn=...&i=...&fp=...&n=...
   createdAt   DateTime      @default(now())
   items       ReceiptItem[]
   expense     Expense?
@@ -290,8 +288,8 @@ RECIPES & MEAL PLAN
   DELETE /api/meal-plan/:id
 
 RECEIPTS
-  POST   /api/receipts                 { source: PHOTO|TEXT|QR, ... } → DRAFT
-                                       PHOTO/TEXT → Gemini parse; QR → fiscal-data API
+  POST   /api/receipts                 { source: PHOTO|TEXT, ... } → DRAFT
+                                       both parsed by Gemini via one schema
   PATCH  /api/receipts/:id             edit draft items before confirming
   POST   /api/receipts/:id/confirm     ATOMIC TRANSACTION:
                                          items → Product(IN_STOCK) (merge by name)
@@ -405,7 +403,7 @@ AI never silently writes into your data — every suggestion is accepted by a ta
 
 ## 7. Security checklist
 
-- [ ] `.env` in `.gitignore` from the first commit; ship a committed `.env.example` with empty values (`DATABASE_URL=`, `GEMINI_API_KEY=`, `AUTH_SECRET=`, `ALLOWED_EMAIL=`, `RECEIPT_API_KEY=`).
+- [ ] `.env` in `.gitignore` from the first commit; ship a committed `.env.example` with empty values (`DATABASE_URL=`, `DIRECT_URL=`, `GEMINI_API_KEY=`, `AUTH_SECRET=`, `ALLOWED_EMAIL=`, `BLOB_READ_WRITE_TOKEN=`).
 - [ ] Registration locked to single-user mode: signup succeeds only when the email equals `ALLOWED_EMAIL`.
 - [ ] Gemini key server-only (see §6.1). Search the built client bundle for the key once as a smoke test.
 - [ ] Passwords hashed with argon2 (never stored, never logged).
@@ -485,13 +483,12 @@ Convention: **routes are thin** (auth check → validate → call a `src/server/
    - receipt → `CONFIRMED`.
 5. If any step fails, nothing is applied. Inventory can never half-update.
 
-### 9.1a The QR path (best data quality)
+### 9.1a ~~The QR path~~ — **removed from scope 2026-08-03**
 
-1. In the app, the camera scans the receipt's QR code client-side (native `BarcodeDetector` API where available, `html5-qrcode` as fallback) and sends the raw string (`t=…&s=…&fn=…&i=…&fp=…&n=…`) to `POST /api/receipts` with `source: QR`.
-2. The server queries a receipt-data API — either the official FNS «Проверка чеков» API or a wrapper service such as proverkacheka.com. This needs its own registration and key (`RECEIPT_API_KEY` in `.env`) and has daily request limits.
-3. The response contains the *exact* fiscal item list (names, prices, quantities) — no OCR, no Gemini parsing needed. Only categorization runs: `CategoryMapping` cache first, one batched AI call for unknown names.
-4. From here the flow is identical: DRAFT → user review → atomic confirm.
-5. **Fallback rule:** if the fiscal API is down or the receipt isn't found yet (data can lag by a few hours), the UI offers the photo path instead. QR is an enhancement, never the only door.
+QR / fiscal-data receipt lookup was cut on the founder's instruction. The photo
+and pasted-text paths in §9.1 are the only ways a receipt enters the system.
+`RECEIPT_API_KEY`, the `QR` enum value and `Receipt.qrRaw` were all removed.
+See `CLAUDE.md` §7 for the decision.
 
 ### 9.2 AI recipe → cook or shop
 
@@ -525,8 +522,7 @@ AI recipe generation from IN_STOCK products with wishes; manual recipe entry for
 **Phase 4 — Receipt scanner: photo + text (week 7).**
 Upload, Gemini Vision parsing (and pasted-text parsing via the same schema), draft review/edit screen, atomic confirm (§9.1). *Accept:* a real photographed receipt updates inventory and creates an expense in one confirm tap; a discarded draft leaves zero traces.
 
-**Phase 4b — QR / fiscal-data source (week 8).**
-Register for the receipt-data API, add `RECEIPT_API_KEY`, client-side QR scanning, `source: QR` path (§9.1a) with the photo fallback rule. *Accept:* scanning a QR from a real receipt yields the exact item list with no manual price fixes; when the API is unreachable, the app offers the photo path instead of failing.
+**Phase 4b — ~~QR / fiscal-data source~~ — CUT 2026-08-03.** Removed from scope on the founder's instruction; no replacement. Phase 4 (photo + text) is the complete receipt story.
 
 **Phase 5 — Finance analytics + weight (week 9).**
 Manual expenses, `/api/analytics/summary`, Recharts: monthly spend, category pie, spend trend; weight entry (one per day, upsert) + progress line chart alongside average daily КБЖУ from the calendar. *Accept:* charts match a hand-checked sum of the underlying rows.
@@ -547,7 +543,7 @@ PWA manifest + icons (installable on phone), Sentry, empty/loading/error states 
 4. **Unit/quantity chaos** («упаковка» vs «кг» vs «шт») → fixed unit list in the schema prompt; merge-by-normalized-name on receipt confirm; accept imprecision — this app tracks *roughly* what you have, not warehouse-grade stock.
 5. **Scope creep** → the v2 cut list exists so features have somewhere to go besides "now".
 6. **Beginner overwhelm** → phases are sequential, each independently shippable; if a phase stalls, ship it smaller rather than pausing deploys.
-7. **Fiscal-data API dependence (QR path)** → third-party service with registration, its own key, rate limits, and data that can lag hours behind purchase → the photo path is always available as a fallback (§9.1a), and QR ships as Phase 4b only after photo/text is stable.
+7. ~~**Fiscal-data API dependence (QR path)**~~ → risk retired: QR was removed from scope 2026-08-03, so the project no longer depends on any third-party fiscal-data service.
 
 **Performance/UX optimizations already designed in:** React Query with optimistic updates on status toggles (the most-used action must feel instant); DB indexes on `(userId, status)`, `(userId, category)`, `(userId, date)`; client-side image compression before receipt upload (~4× faster on mobile data); saved recipes reused from the base with zero AI calls; skeleton loaders on AI actions with honest "Gemini думает…" states.
 
@@ -557,7 +553,7 @@ PWA manifest + icons (installable on phone), Sentry, empty/loading/error states 
 
 1. **Platform:** PWA. ✅ resolved 2026-08-02
 2. **Audience:** single user; registration locked via `ALLOWED_EMAIL`; schema stays multi-user-ready. ✅ resolved 2026-08-02
-3. **Receipts:** all three sources (photo / text / QR), photo as universal fallback, QR in Phase 4b. ✅ resolved 2026-08-02
+3. **Receipts:** photo + pasted text. Originally all three sources with QR in Phase 4b (resolved 2026-08-02); **QR removed from scope 2026-08-03** on the founder's instruction.
 4. **Weight module:** default = logging + progress chart. Goals/targets can be added in v2 without schema changes (a `targetWeightKg` field on User).
 5. **Currency/locale:** default = RUB only, Russian UI. Multi-currency deferred; all money columns are `Decimal`, so a later `currency` column is a trivial migration.
 
