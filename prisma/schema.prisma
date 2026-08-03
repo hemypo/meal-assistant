@@ -12,8 +12,20 @@ model User {
   email            String            @unique
   passwordHash     String?
   name             String?
-  kcalTarget       Int               @default(2000) // drives the DayCard kcal ring
-  weightGoalKg     Decimal           @default(76.0) // drives the goal line and «До цели»
+  // ---- nutrition profile (drives the personalised calorie target) ----
+  sex           Sex?
+  birthYear     Int?
+  heightCm      Int?
+  activityLevel ActivityLevel  @default(MODERATE)
+  goal          NutritionGoal  @default(MAINTAIN)
+
+  // Targets. kcalTarget is normally the computed recommendation, but the user
+  // may override it — so it is stored, not derived on every read.
+  kcalTarget    Int      @default(2000)
+  proteinTargetG Int?
+  fatTargetG     Int?
+  carbsTargetG   Int?
+  weightGoalKg   Decimal  @default(76.0) // drives the goal line and «До цели»
   createdAt        DateTime          @default(now())
   products         Product[]
   categoryMappings CategoryMapping[]
@@ -22,6 +34,26 @@ model User {
   receipts         Receipt[]
   expenses         Expense[]
   weightEntries    WeightEntry[]
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+/// Mifflin-St Jeor activity multipliers, see src/server/nutrition.ts.
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  HIGH
+  ATHLETE
+}
+
+enum NutritionGoal {
+  LOSE
+  MAINTAIN
+  GAIN
 }
 
 // ------- Module 1: Inventory / Shopping list -------

@@ -32,6 +32,8 @@ Receipt confirmed ←─ receipt scan (photo/text) ←─ you shop
 
 **5. ⚖️ Вес.** One weight entry per day with a progress chart, shown alongside average daily КБЖУ from the meal calendar.
 
+**6. ⚙️ Настройки.** Your profile (sex, year of birth, height, activity, goal) plus your current weight produce a daily calorie norm via the **Mifflin-St Jeor formula** — computed, not guessed by an LLM. Gemini then explains the number in plain Russian and proposes a Б/Ж/У split, whose arithmetic is checked against the target before it is offered. The resulting numbers drive the day's kcal ring and the calorie target passed into recipe generation. Every value stays editable, and the panel states plainly that this is an estimate rather than medical advice.
+
 ## Reconciliation — сверка план ↔ реализация
 
 **Rules of this table.** It is the single source of truth for what is actually built. Claude Code updates a row's Status *in the same commit* where the feature's acceptance criteria (master plan §10) pass. A mismatch between this table and the code is a contradiction under CLAUDE.md §0: stop and ask the founder. Statuses: ⬜ Planned · 🟨 In progress · ✅ Done · ⏸ Deferred (v2).
@@ -55,6 +57,8 @@ Receipt confirmed ←─ receipt scan (photo/text) ←─ you shop
 | 15 | Manual expenses + analytics charts | §5 | 5 | ✅ |
 | 16 | Weight tracking + progress chart | §5 | 5 | ✅ |
 | 17 | PWA manifest, Sentry, empty/error states, cleanup cron, backup test | §10 P6 | 6 | ⬜ |
+| 19 | Settings panel + personalised calorie/Б-Ж-У targets (Mifflin-St Jeor + AI explanation) | §10 P7 | 7 | ✅ |
+| 20 | Finance assistant (budgets, AI spending review, forecast, cost-per-meal) | §10 P8 | 8 | ⬜ |
 | 18 | Family sharing, barcode scan, reminders, goals, native apps, offline | §10 | v2 | ⏸ |
 
 ## Tech stack

@@ -94,6 +94,23 @@ export const generateRecipeSchema = {
 } as const;
 
 /**
+ * explain_nutrition: computed numbers in -> plain-language plan + macro split.
+ * The calories themselves are NOT produced here; they come from the
+ * Mifflin-St Jeor calculation in src/lib/nutrition.ts.
+ */
+export const explainNutritionSchema = {
+  type: "OBJECT",
+  properties: {
+    summary: { type: "STRING" },
+    proteinG: { type: "INTEGER" },
+    fatG: { type: "INTEGER" },
+    carbsG: { type: "INTEGER" },
+    tips: { type: "ARRAY", items: { type: "STRING" } },
+  },
+  required: ["summary", "proteinG", "fatG", "carbsG", "tips"],
+} as const;
+
+/**
  * parse_receipt: a photo OR pasted text -> the same structured receipt.
  * One schema for both sources (master plan §6.2) so the draft pipeline is
  * identical regardless of how the receipt arrived.

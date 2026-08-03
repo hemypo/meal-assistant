@@ -5,6 +5,7 @@ import {
   categorizeSchema,
   estimateKbjuSchema,
   estimatePriceSchema,
+  explainNutritionSchema,
   generateRecipeSchema,
   parseBulkListSchema,
   parseReceiptSchema,
@@ -125,6 +126,8 @@ const generateRecipe = {
   input: z.object({
     inStock: z.array(z.string()).max(200),
     wishes: z.string().trim().max(300).optional(),
+    /** Calories this single dish should land near, from the user's target. */
+    targetKcal: z.number().int().positive().max(5000).optional(),
   }),
   output: z.object({
     title: z.string().min(1),
@@ -144,14 +147,17 @@ const generateRecipe = {
       .min(1),
   }),
   responseSchema: generateRecipeSchema,
-  prompt: ({ inStock, wishes }) =>
+  prompt: ({ inStock, wishes, targetKcal }) =>
     `В наличии: ${inStock.length ? inStock.join(", ") : "ничего"}.\n` +
     (wishes ? `Пожелания: ${wishes}.\n` : "") +
+    (targetKcal
+      ? `Целевая калорийность блюда: около ${targetKcal} ккал — подбери порции под неё.\n`
+      : "") +
     `Придумай один рецепт, преимущественно из имеющегося. Единицы: ${unitList}. ` +
     `wasInStock=false для недостающих ингредиентов, для них укажи estPrice в рублях. ` +
     `Шаги — короткие, по одному действию. КБЖУ на всё блюдо.`,
 } satisfies TaskDef<
-  { inStock: string[]; wishes?: string },
+  { inStock: string[]; wishes?: string; targetKcal?: number },
   {
     title: string;
     steps: string[];
@@ -269,8 +275,59 @@ const parseReceipt = {
   }
 >;
 
+/**
+ * Explains an ALREADY-COMPUTED calorie target and proposes a macro split.
+ *
+ * The kcal number is deliberately an input, not an output: Mifflin-St Jeor is
+ * exact arithmetic and the model measurably fumbles sums (see §7). AI is used
+ * here for what it is good at — wording and nutritional judgement.
+ */
+const explainNutrition = {
+  tier: "cheap",
+  reasoning: false,
+  weight: 2,
+  input: z.object({
+    kcal: z.number().int().positive().max(10000),
+    goal: z.enum(["LOSE", "MAINTAIN", "GAIN"]),
+    activity: z.string().min(1).max(100),
+    weightKg: z.number().positive().max(400),
+    goalWeightKg: z.number().positive().max(400),
+  }),
+  output: z.object({
+    summary: z.string().min(1).max(600),
+    proteinG: z.number().int().nonnegative().max(600),
+    fatG: z.number().int().nonnegative().max(400),
+    carbsG: z.number().int().nonnegative().max(900),
+    tips: z.array(z.string().min(1).max(200)).max(4),
+  }),
+  responseSchema: explainNutritionSchema,
+  prompt: ({ kcal, goal, activity, weightKg, goalWeightKg }) =>
+    `Суточная норма уже рассчитана: ${kcal} ккал. НЕ пересчитывай её.\n` +
+    `Цель: ${goal === "LOSE" ? "снизить вес" : goal === "GAIN" ? "набрать вес" : "поддерживать вес"}. ` +
+    `Активность: ${activity}. Текущий вес: ${weightKg} кг, целевой: ${goalWeightKg} кг.\n` +
+    `Предложи разбивку Б/Ж/У в граммах ровно на ${kcal} ккал (белок 4 ккал/г, жир 9, углеводы 4). ` +
+    `summary — 2–3 предложения простым языком, без медицинских обещаний. ` +
+    `tips — до 4 коротких практических советов по питанию.`,
+} satisfies TaskDef<
+  {
+    kcal: number;
+    goal: string;
+    activity: string;
+    weightKg: number;
+    goalWeightKg: number;
+  },
+  {
+    summary: string;
+    proteinG: number;
+    fatG: number;
+    carbsG: number;
+    tips: string[];
+  }
+>;
+
 export const TASKS = {
   categorize,
+  explain_nutrition: explainNutrition,
   parse_bulk_list: parseBulkList,
   suggest_unit: suggestUnit,
   estimate_price: estimatePrice,

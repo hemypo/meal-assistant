@@ -32,7 +32,6 @@ import { plural } from "@/lib/utils";
 import type { MealEntryDTO } from "@/server/mealplan";
 import type { RecipeDTO } from "@/server/recipes";
 
-const KCAL_TARGET = 2000; // User.kcalTarget default; settings surface lands with Phase 5.
 
 async function fetchMealPlan(from: string, to: string): Promise<MealEntryDTO[]> {
   const response = await fetch(`/api/meal-plan?from=${from}&to=${to}`);
@@ -64,6 +63,18 @@ export function MenuView() {
     date: string;
     mealType: MealTypeKey;
   } | null>(null);
+
+  // The kcal ring reads the user's real target from settings, not a constant.
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const r = await fetch("/api/settings");
+      if (!r.ok) throw new Error("Не удалось загрузить настройки");
+      return r.json() as Promise<{ kcalTarget: number }>;
+    },
+    staleTime: 5 * 60_000,
+  });
+  const kcalTarget = settings?.kcalTarget ?? 2000;
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: planKey,
@@ -234,7 +245,7 @@ export function MenuView() {
             iso={iso}
             isToday={iso === today}
             entries={entries.filter((e) => e.date === iso)}
-            kcalTarget={KCAL_TARGET}
+            kcalTarget={kcalTarget}
             selectedRecipeId={panelRecipe?.id}
             onOpenRecipe={(entry) => {
               setPanelRecipe(entry.recipe);

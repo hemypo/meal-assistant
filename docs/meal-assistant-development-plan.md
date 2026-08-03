@@ -530,6 +530,18 @@ Manual expenses, `/api/analytics/summary`, Recharts: monthly spend, category pie
 **Phase 6 — Hardening & beta (week 10+).**
 PWA manifest + icons (installable on phone), Sentry, empty/loading/error states everywhere, the 7-day cleanup cron for orphan AI recipes, backup-restore test, security checklist (§7) walked top to bottom, invite 2–3 friends.
 
+**Phase 7 — Nutrition assistant (settings + personalised targets).** ✅ **DELIVERED EARLY, 2026-08-03**, out of phase order at the founder's request. Settings panel at `/settings`; `User` gains sex / birthYear / heightCm / activityLevel / goal and Б/Ж/У targets; the daily calorie norm is computed by **Mifflin-St Jeor in `src/lib/nutrition.ts`** (deterministic, unit-tested against the published formula) using the latest `WeightEntry`; Gemini's `explain_nutrition` task only writes the plain-language explanation and proposes the macro split, and its arithmetic is verified against the computed target before being accepted. The target now drives the DayCard ring and is passed into `generate_recipe` as a per-meal share. *Accept (met):* changing the profile changes the recommendation; the ring and generated recipes follow the user's own number rather than a constant.
+
+**Phase 8 — Finance assistant (PLANNED, NOT BUILT).** Requested by the founder 2026-08-03; queued deliberately so it is not forgotten and not started early. Intended scope, to be confirmed before work begins:
+
+- **Budgets** — a monthly limit overall and per category, with progress against it. Needs a `Budget` model (`userId`, `month`, `category?`, `limitAmount`).
+- **AI spending review** — a registry task that receives the month's category totals and trend (never raw receipts) and returns a short plain-language read of where money went, what changed versus last month, and two or three concrete suggestions. Same discipline as nutrition: **the arithmetic is computed, the AI only interprets it.**
+- **Forecast** — projected month-end spend from the trend so far. Deterministic; no AI needed.
+- **Shopping-list cost estimate** — sum `estPrice` across `TO_BUY` products so the user sees what the next shop will cost, and flag items whose receipt price has risen sharply versus the learned average.
+- **Link to food** — cost per planned meal, joining `MealPlanEntry` to receipt-derived prices. This is the piece that closes the loop between the food and money halves of the app.
+
+*Accept:* the review's numbers reconcile exactly with `/api/analytics/summary`; a budget over-run is visible before month end; no financial advice is presented as fact — the AI text is framed as observations about the user's own data.
+
 **Deferred to v2 (deliberately cut from MVP):** family/shared households (schema-ready, so it's a feature later, not a rewrite), barcode scanning, push reminders (expiry dates), nutrition goals & coaching, native apps, offline mode.
 
 ---

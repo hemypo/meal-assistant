@@ -156,20 +156,35 @@ export async function deleteRecipe(
 }
 
 /** Generate a recipe from what is actually in stock (master plan §9.2). */
+/**
+ * Rough share of the daily target for a single main dish. Breakfast/lunch/
+ * dinner/snack are not equal, but the recipe is not tied to a slot at
+ * generation time, so a main-meal share is the honest default.
+ */
+const MEAL_SHARE = 0.3;
+
 export async function generateRecipe(
   userId: string,
   wishes?: string,
 ): Promise<RecipeDTO> {
-  const inStockProducts = await prisma.product.findMany({
-    where: { userId, status: "IN_STOCK" },
-    select: { name: true, quantity: true, unit: true },
-  });
+  const [inStockProducts, user] = await Promise.all([
+    prisma.product.findMany({
+      where: { userId, status: "IN_STOCK" },
+      select: { name: true, quantity: true, unit: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { kcalTarget: true },
+    }),
+  ]);
 
   const generated = await runTask("generate_recipe", {
     inStock: inStockProducts.map(
       (p) => `${p.name} ${p.quantity.toString()} ${p.unit}`,
     ),
     wishes: wishes?.trim() || undefined,
+    // Recipes now aim at the user's own target instead of ignoring it.
+    targetKcal: user ? Math.round(user.kcalTarget * MEAL_SHARE) : undefined,
   });
 
   // Stored unsaved: an AI recipe only persists if the user keeps or schedules

@@ -8,6 +8,7 @@ import {
   Receipt,
   Refrigerator,
   Scale,
+  Settings,
   Utensils,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,51 @@ const NAV = [
   { href: "/finance", label: "Финансы", icon: BarChart3 },
   { href: "/weight", label: "Вес", icon: Scale },
 ] as const;
+
+/**
+ * Settings is a utility surface, not a sixth module: MASTER.md §4 fixes the
+ * bar at five destinations and §7 bans hamburger menus. So it sits in the
+ * sidebar footer on desktop and as a header icon on mobile.
+ */
+export function SettingsLink({ variant }: { variant: "sidebar" | "header" }) {
+  const pathname = usePathname();
+  const active = pathname.startsWith("/settings");
+
+  if (variant === "header") {
+    return (
+      <Link
+        href="/settings"
+        aria-label="Настройки"
+        title="Настройки"
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl transition-colors duration-[160ms] lg:hidden",
+          active
+            ? "bg-primary-soft text-primary"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
+      >
+        <Settings className="h-5 w-5" aria-hidden />
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href="/settings"
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex cursor-pointer items-center gap-3 rounded-full px-4 py-2.5 text-[15px] font-bold transition-colors duration-[160ms]",
+        active
+          ? "bg-primary-soft text-primary"
+          : "text-muted-foreground hover:bg-primary-soft hover:text-primary",
+      )}
+    >
+      <Settings className="h-5 w-5" aria-hidden />
+      Настройки
+    </Link>
+  );
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -64,6 +110,10 @@ export function Sidebar() {
           );
         })}
       </ul>
+
+      <div className="mt-auto border-t border-border pt-3">
+        <SettingsLink variant="sidebar" />
+      </div>
     </nav>
   );
 }

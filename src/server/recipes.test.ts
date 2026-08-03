@@ -9,6 +9,7 @@ const prismaMock = {
     deleteMany: vi.fn(),
   },
   product: { findMany: vi.fn(), createMany: vi.fn() },
+  user: { findUnique: vi.fn() },
 };
 const runTask = vi.fn();
 
@@ -39,6 +40,7 @@ const recipeRow = {
 beforeEach(() => {
   vi.clearAllMocks();
   prismaMock.product.createMany.mockResolvedValue({ count: 0 });
+  prismaMock.user.findUnique.mockResolvedValue({ kcalTarget: 2400 });
 });
 
 describe("userId scoping", () => {
@@ -167,6 +169,8 @@ describe("recipe generation", () => {
     expect(runTask).toHaveBeenCalledWith("generate_recipe", {
       inStock: ["Куриное филе 1.2 кг"],
       wishes: "лёгкий ужин",
+      // 30% of the user's own 2400 kcal target, not a hardcoded default.
+      targetKcal: 720,
     });
     // AI recipes start unsaved — they only persist if kept or scheduled.
     expect(prismaMock.recipe.create.mock.calls[0][0].data.isSaved).toBe(false);
@@ -192,6 +196,7 @@ describe("recipe generation", () => {
     expect(runTask).toHaveBeenCalledWith("generate_recipe", {
       inStock: [],
       wishes: undefined,
+      targetKcal: 720,
     });
   });
 });
