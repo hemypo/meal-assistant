@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { reportError } from "@/lib/observability";
 import { confirmReceipt } from "@/server/receipts";
 
 type Params = { params: Promise<{ id: string }> };
@@ -28,9 +29,9 @@ export async function POST(_request: Request, { params }: Params) {
       );
     }
     return Response.json(result);
-  } catch {
+  } catch (error) {
     // The transaction rolled back — inventory and expenses are untouched.
-    console.error("[receipts] confirm transaction failed");
+    reportError("receipts", error, "confirm_transaction");
     return Response.json(
       { error: "Не удалось подтвердить чек — ничего не изменено" },
       { status: 500 },

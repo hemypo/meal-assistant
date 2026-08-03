@@ -13,10 +13,19 @@ export const metadata: Metadata = {
   title: "Провизия — кухня под контролем",
   description:
     "Запасы, рацион, чеки, финансы и вес — один домашний контур в одном приложении.",
+  // iOS ignores the manifest for the home-screen icon and standalone mode.
+  appleWebApp: {
+    capable: true,
+    title: "Провизия",
+    statusBarStyle: "black-translucent",
+  },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
   themeColor: "#0A0C10",
+  // Respects the notch/home indicator so the bottom nav is not clipped.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ReceiptEditor } from "./ReceiptEditor";
 import { UploadReceiptModal } from "./UploadReceiptModal";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
@@ -28,7 +29,7 @@ export function ReceiptsView() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
 
-  const { data: receipts = [], isLoading } = useQuery({
+  const { data: receipts = [], isLoading, isError, refetch } = useQuery({
     queryKey: KEY,
     queryFn: fetchReceipts,
   });
@@ -152,6 +153,23 @@ export function ReceiptsView() {
       onInvalidEdit={() => toast("Не сохранено: проверьте значение")}
     />
   );
+
+  // Without this, a failed fetch renders as «Чеков пока нет».
+  if (isError && receipts.length === 0) {
+    return (
+      <>
+        <ScreenHeader
+          kicker="03 · Покупки"
+          title="Чеки"
+          subtitle="Не удалось загрузить"
+        />
+        <ErrorState
+          description="Чеки не загрузились. Ничего не потеряно — попробуйте ещё раз."
+          onRetry={() => refetch()}
+        />
+      </>
+    );
+  }
 
   return (
     <>

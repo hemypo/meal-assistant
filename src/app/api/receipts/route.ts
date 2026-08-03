@@ -1,5 +1,6 @@
 import { put } from "@vercel/blob";
 import { auth } from "@/lib/auth";
+import { reportError } from "@/lib/observability";
 import { AiTaskError, TASKS } from "@/lib/ai/tasks";
 import { createDraftReceipt, listReceipts } from "@/server/receipts";
 import {
@@ -61,9 +62,9 @@ export async function POST(request: Request) {
         { access: "private", contentType: parsed.data.mimeType },
       );
       imageUrl = blob.url;
-    } catch {
+    } catch (error) {
       // Storage is a nice-to-have; parsing is the point. Carry on without it.
-      console.error("[receipts] blob upload failed");
+      reportError("receipts", error, "blob_upload");
     }
   }
 
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
     if (error instanceof AiTaskError) {
       return Response.json({ error: error.message }, { status: 422 });
     }
-    console.error("[receipts] parse failed");
+    reportError("receipts", error, "parse");
     return Response.json({ error: "ИИ временно недоступен" }, { status: 503 });
   }
 }

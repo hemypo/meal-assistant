@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { reportError } from "@/lib/observability";
 import { AiTaskError, TASKS } from "@/lib/ai/tasks";
 import { generateRecipe } from "@/server/recipes";
 import { checkRateLimit } from "@/server/ratelimit";
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     if (error instanceof AiTaskError) {
       return Response.json({ error: error.message }, { status: 422 });
     }
-    console.error("[ai/recipe] generation failed");
+    reportError("ai", error, "generate_recipe");
     return Response.json({ error: "ИИ временно недоступен" }, { status: 503 });
   }
 }

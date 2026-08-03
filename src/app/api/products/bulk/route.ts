@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { reportError } from "@/lib/observability";
 import { AiTaskError } from "@/lib/ai/tasks";
 import { createProductsBulk, parseBulkText } from "@/server/bulk";
 import { createProductSchema, productStatusSchema } from "@/lib/validation/product";
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
     if (error instanceof AiTaskError) {
       return Response.json({ error: error.message }, { status: 422 });
     }
-    console.error("[products/bulk] parse failed");
+    reportError("products", error, "bulk_parse");
     return Response.json({ error: "ИИ временно недоступен" }, { status: 503 });
   }
 }

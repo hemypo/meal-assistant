@@ -5,6 +5,7 @@ import { Scale } from "lucide-react";
 import { useState } from "react";
 import { WeightChart } from "./WeightChart";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field } from "@/components/ui/Field";
@@ -34,7 +35,7 @@ export function WeightView() {
   const from = month;
   const to = endOfMonth(month);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["weights", from, to],
     queryFn: async (): Promise<WeightOverview> => {
       const r = await fetch(`/api/weights?from=${from}&to=${to}`);
@@ -88,6 +89,23 @@ export function WeightView() {
           0,
           Math.min(100, Math.round(((startKg - latest) / (startKg - goalKg)) * 100)),
         );
+
+  // A failed load must not be mistaken for "no data".
+  if (isError && !data) {
+    return (
+      <>
+        <ScreenHeader
+          kicker="05 · Здоровье"
+          title="Вес"
+          subtitle="Не удалось загрузить"
+        />
+        <ErrorState
+          description="Записи веса не загрузились. Попробуйте ещё раз."
+          onRetry={() => refetch()}
+        />
+      </>
+    );
+  }
 
   return (
     <>

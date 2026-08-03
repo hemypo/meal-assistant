@@ -7,6 +7,7 @@ import { AddExpenseModal } from "./AddExpenseModal";
 import { CategoryDonut } from "./CategoryDonut";
 import { TrendChart } from "./TrendChart";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PeriodNav } from "@/components/ui/PeriodNav";
@@ -34,7 +35,7 @@ export function FinanceView() {
   const to = endOfMonth(month);
   const range = `from=${from}&to=${to}`;
 
-  const { data: summary, isLoading } = useQuery({
+  const { data: summary, isLoading, isError, refetch } = useQuery({
     queryKey: ["analytics", from, to],
     queryFn: async (): Promise<AnalyticsSummary> => {
       const r = await fetch(`/api/analytics/summary?${range}`);
@@ -97,6 +98,23 @@ export function FinanceView() {
   const topCategory = summary?.byCategory[0];
   const daysWithSpend = summary?.trend.length ?? 0;
   const avgPerDay = daysWithSpend === 0 ? 0 : total / daysWithSpend;
+
+  // A failed load must not be mistaken for "no data".
+  if (isError && !summary) {
+    return (
+      <>
+        <ScreenHeader
+          kicker="04 · Деньги"
+          title="Финансы"
+          subtitle="Не удалось загрузить"
+        />
+        <ErrorState
+          description="Аналитика не загрузилась. Расходы на месте — попробуйте ещё раз."
+          onRetry={() => refetch()}
+        />
+      </>
+    );
+  }
 
   return (
     <>

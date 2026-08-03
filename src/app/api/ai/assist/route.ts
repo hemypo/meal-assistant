@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { reportError } from "@/lib/observability";
 import { AiTaskError, runTask, TASK_NAMES, TASKS } from "@/lib/ai/tasks";
 import { checkRateLimit } from "@/server/ratelimit";
 
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     }
     // Never surface provider errors to the client — they can carry request
     // details, and CLAUDE.md §5 forbids logging anything key-adjacent.
-    console.error("[ai/assist] task failed:", task);
+    reportError("ai", error, `assist:${task}`);
     return Response.json({ error: "ИИ временно недоступен" }, { status: 503 });
   }
 }

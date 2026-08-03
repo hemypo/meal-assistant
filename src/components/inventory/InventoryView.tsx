@@ -6,6 +6,7 @@ import { AddProductForm } from "./AddProductForm";
 import { BulkAddModal } from "./BulkAddModal";
 import { ProductPane } from "./ProductPane";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useToast } from "@/components/ui/Toast";
 import { cn, plural } from "@/lib/utils";
 import type { CreateProductInput } from "@/lib/validation/product";
@@ -27,7 +28,7 @@ export function InventoryView() {
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, isError, refetch } = useQuery({
     queryKey: KEY,
     queryFn: fetchProducts,
   });
@@ -124,6 +125,23 @@ export function InventoryView() {
   const subtitle = isLoading
     ? "Загружаем…"
     : `${inStock.length} ${plural(inStock.length, "позиция", "позиции", "позиций")} в наличии · ${toBuy.length} в списке покупок`;
+
+  // A failed load must not look like an empty pantry.
+  if (isError && products.length === 0) {
+    return (
+      <>
+        <ScreenHeader
+          kicker="01 · Кладовая"
+          title="Запасы"
+          subtitle="Не удалось загрузить"
+        />
+        <ErrorState
+          description="Продукты не загрузились. Данные на месте — попробуйте ещё раз."
+          onRetry={() => refetch()}
+        />
+      </>
+    );
+  }
 
   return (
     <>

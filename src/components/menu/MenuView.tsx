@@ -17,6 +17,7 @@ import { RecipePanel } from "./RecipePanel";
 import { SchedulePicker } from "./SchedulePicker";
 import { SavedRecipesModal } from "./SavedRecipesModal";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -76,7 +77,7 @@ export function MenuView() {
   });
   const kcalTarget = settings?.kcalTarget ?? 2000;
 
-  const { data: entries = [], isLoading } = useQuery({
+  const { data: entries = [], isLoading, isError, refetch } = useQuery({
     queryKey: planKey,
     queryFn: () => fetchMealPlan(days[0], days[6]),
   });
@@ -188,6 +189,23 @@ export function MenuView() {
   const subtitle = isLoading
     ? "Загружаем…"
     : `${entries.length} ${plural(entries.length, "блюдо", "блюда", "блюд")} на неделе · ${weekKcal} ккал`;
+
+  // A failed load must not be mistaken for "no data".
+  if (isError && entries.length === 0) {
+    return (
+      <>
+        <ScreenHeader
+          kicker="02 · Меню"
+          title="Рацион"
+          subtitle="Не удалось загрузить"
+        />
+        <ErrorState
+          description="Календарь не загрузился. Рецепты на месте — попробуйте ещё раз."
+          onRetry={() => refetch()}
+        />
+      </>
+    );
+  }
 
   return (
     <>

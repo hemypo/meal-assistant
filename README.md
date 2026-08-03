@@ -56,10 +56,11 @@ Receipt confirmed ←─ receipt scan (photo/text) ←─ you shop
 | 14 | ~~Receipt: QR / fiscal-data API~~ — **removed from scope** 2026-08-03 | — | — | ❌ |
 | 15 | Manual expenses + analytics charts | §5 | 5 | ✅ |
 | 16 | Weight tracking + progress chart | §5 | 5 | ✅ |
-| 17 | PWA manifest, Sentry, empty/error states, cleanup cron, backup test | §10 P6 | 6 | ⬜ |
+| 17 | PWA manifest, error states, cleanup cron, security walk | §10 P6 | 6 | ✅ |
+| 18 | Sentry error monitoring | §10 P6 | 6 | ⏸ needs founder's Sentry account + DSN; seam built (`src/lib/observability.ts`) |
 | 19 | Settings panel + personalised calorie/Б-Ж-У targets (Mifflin-St Jeor + AI explanation) | §10 P7 | 7 | ✅ |
 | 20 | Finance assistant (budgets, AI spending review, forecast, cost-per-meal) | §10 P8 | 8 | ⬜ |
-| 18 | Family sharing, barcode scan, reminders, goals, native apps, offline | §10 | v2 | ⏸ |
+| 21 | Family sharing, barcode scan, reminders, goals, native apps, offline | §10 | v2 | ⏸ |
 
 ## Tech stack
 
