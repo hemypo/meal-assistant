@@ -9,6 +9,7 @@ import {
   generateRecipeSchema,
   parseBulkListSchema,
   parseReceiptSchema,
+  reviewSpendingSchema,
   suggestUnitSchema,
 } from "./schemas";
 import { CATEGORIES, UNITS } from "@/lib/utils";
@@ -325,8 +326,83 @@ const explainNutrition = {
   }
 >;
 
+/**
+ * Interprets ALREADY-COMPUTED monthly spending. Raw receipts never reach the
+ * model — only category totals, deltas and budget status, which is both a
+ * privacy choice and a cost one.
+ *
+ * The prompt forbids inventing figures precisely because the accept criterion
+ * is that the review reconciles exactly with /api/analytics/summary.
+ */
+const reviewSpending = {
+  tier: "cheap",
+  reasoning: false,
+  weight: 2,
+  input: z.object({
+    month: z.string().min(1).max(20),
+    total: z.number().nonnegative(),
+    previousTotal: z.number().nonnegative().nullable(),
+    projected: z.number().nonnegative(),
+    categories: z
+      .array(
+        z.object({
+          category: z.string().min(1),
+          amount: z.number().nonnegative(),
+          share: z.number().nonnegative(),
+        }),
+      )
+      .max(20),
+    budgets: z
+      .array(
+        z.object({
+          category: z.string(),
+          limitAmount: z.number().nonnegative(),
+          spent: z.number().nonnegative(),
+          overspent: z.boolean(),
+        }),
+      )
+      .max(20),
+  }),
+  output: z.object({
+    summary: z.string().min(1).max(700),
+    observations: z.array(z.string().min(1).max(220)).max(5),
+    suggestions: z.array(z.string().min(1).max(220)).max(4),
+  }),
+  responseSchema: reviewSpendingSchema,
+  prompt: ({ month, total, previousTotal, projected, categories, budgets }) =>
+    `Данные о расходах пользователя за ${month} (в рублях). Все числа уже посчитаны — НЕ пересчитывай их и НЕ придумывай новых.\n` +
+    `Всего: ${total}. Прогноз до конца месяца: ${projected}.` +
+    (previousTotal === null
+      ? " Данных за прошлый месяц нет.\n"
+      : ` Прошлый месяц: ${previousTotal}.\n`) +
+    `По категориям: ${categories.map((c) => `${c.category} ${c.amount} (${c.share}%)`).join("; ") || "нет трат"}.\n` +
+    (budgets.length
+      ? `Лимиты: ${budgets.map((b) => `${b.category || "всего"} ${b.spent}/${b.limitAmount}${b.overspent ? " — превышен" : ""}`).join("; ")}.\n`
+      : "Лимиты не заданы.\n") +
+    `summary — 2–3 предложения о том, куда ушли деньги. ` +
+    `observations — конкретные наблюдения по этим данным. ` +
+    `suggestions — практичные шаги, как тратить меньше на продукты. ` +
+    `Это наблюдения по личным тратам, а не финансовая консультация: не давай инвестиционных советов и не обещай результатов.`,
+} satisfies TaskDef<
+  {
+    month: string;
+    total: number;
+    previousTotal: number | null;
+    projected: number;
+    categories: { category: string; amount: number; share: number }[];
+    budgets: {
+      category: string;
+      limitAmount: number;
+      spent: number;
+      overspent: boolean;
+    }[];
+  },
+  { summary: string; observations: string[]; suggestions: string[] }
+>;
+
 export const TASKS = {
   categorize,
+  review_spending: reviewSpending,
   explain_nutrition: explainNutrition,
   parse_bulk_list: parseBulkList,
   suggest_unit: suggestUnit,

@@ -34,6 +34,7 @@ model User {
   receipts         Receipt[]
   expenses         Expense[]
   weightEntries    WeightEntry[]
+  budgets          Budget[]
 }
 
 enum Sex {
@@ -193,6 +194,23 @@ model ReceiptItem {
 }
 
 // ------- Module 4: Finance -------
+
+/// Monthly spending limit, overall or per category.
+model Budget {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// YYYY-MM
+  month  String
+  /// Empty string = the overall limit for the month. Deliberately not NULL:
+  /// Postgres treats NULLs as distinct, so a nullable column would let
+  /// duplicate "overall" rows past the unique constraint.
+  category    String  @default("")
+  limitAmount Decimal
+
+  @@unique([userId, month, category])
+  @@index([userId, month])
+}
 
 model Expense {
   id        String   @id @default(cuid())

@@ -111,6 +111,21 @@ export const explainNutritionSchema = {
 } as const;
 
 /**
+ * review_spending: computed monthly figures in -> a plain-language read out.
+ * No amounts are produced here; every number comes from src/server/budgets.ts
+ * and src/server/analytics.ts.
+ */
+export const reviewSpendingSchema = {
+  type: "OBJECT",
+  properties: {
+    summary: { type: "STRING" },
+    observations: { type: "ARRAY", items: { type: "STRING" } },
+    suggestions: { type: "ARRAY", items: { type: "STRING" } },
+  },
+  required: ["summary", "observations", "suggestions"],
+} as const;
+
+/**
  * parse_receipt: a photo OR pasted text -> the same structured receipt.
  * One schema for both sources (master plan §6.2) so the draft pipeline is
  * identical regardless of how the receipt arrived.

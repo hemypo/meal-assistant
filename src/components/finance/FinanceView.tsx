@@ -4,7 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Plus, Receipt, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { AddExpenseModal } from "./AddExpenseModal";
+import { BudgetPanel } from "./BudgetPanel";
 import { CategoryDonut } from "./CategoryDonut";
+import { SpendingReview } from "./SpendingReview";
 import { TrendChart } from "./TrendChart";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -50,6 +52,22 @@ export function FinanceView() {
       const r = await fetch(`/api/expenses?${range}`);
       if (!r.ok) throw new Error("Не удалось загрузить расходы");
       return r.json();
+    },
+  });
+
+  // Month key for budgets/forecast/review — all keyed on YYYY-MM.
+  const monthKey = from.slice(0, 7);
+
+  const { data: outlook } = useQuery({
+    queryKey: ["forecast", monthKey],
+    queryFn: async () => {
+      const r = await fetch(`/api/analytics/forecast?month=${monthKey}`);
+      if (!r.ok) throw new Error("Не удалось загрузить прогноз");
+      return r.json() as Promise<{
+        forecast: { projected: number; dailyAverage: number; projectedOverrun: number | null };
+        shopping: { itemCount: number; pricedCount: number; estimatedTotal: number };
+        mealCost: { plannedMeals: number; averagePerMeal: number | null };
+      }>;
     },
   });
 
@@ -164,6 +182,52 @@ export function FinanceView() {
           }
           deltaTone="up"
         />
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Прогноз до конца месяца"
+          value={outlook ? formatPrice(outlook.forecast.projected) : "—"}
+          delta={
+            outlook?.forecast.projectedOverrun !== null &&
+            outlook?.forecast.projectedOverrun !== undefined
+              ? outlook.forecast.projectedOverrun > 0
+                ? `превысит лимит на ${formatPrice(outlook.forecast.projectedOverrun)}`
+                : `уложитесь в лимит`
+              : undefined
+          }
+          deltaTone={
+            (outlook?.forecast.projectedOverrun ?? 0) > 0 ? "up" : undefined
+          }
+        />
+        <StatCard
+          label="Список покупок"
+          value={outlook ? formatPrice(outlook.shopping.estimatedTotal) : "—"}
+          delta={
+            outlook
+              ? `${outlook.shopping.pricedCount} из ${outlook.shopping.itemCount} с ценой`
+              : undefined
+          }
+        />
+        <StatCard
+          label="В среднем на приём пищи"
+          value={
+            outlook?.mealCost.averagePerMeal !== null &&
+            outlook?.mealCost.averagePerMeal !== undefined
+              ? formatPrice(outlook.mealCost.averagePerMeal)
+              : "—"
+          }
+          delta={
+            outlook
+              ? `${outlook.mealCost.plannedMeals} ${plural(outlook.mealCost.plannedMeals, "приём", "приёма", "приёмов")} в плане`
+              : undefined
+          }
+        />
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <BudgetPanel month={monthKey} />
+        <SpendingReview month={monthKey} />
       </div>
 
       {count === 0 && !isLoading ? (

@@ -28,7 +28,7 @@ Receipt confirmed ←─ receipt scan (photo/text) ←─ you shop
 
 **3. 🧾 Чеки.** Two input sources: photo of a paper receipt (Gemini Vision) and pasted text — both parsed through the same schema. Every parse lands as an editable **draft**; confirming runs one atomic transaction that moves items into «В наличии» and records the expense. Nothing is ever applied silently.
 
-**4. 📊 Финансы.** Expenses recorded automatically from confirmed receipts plus manual entries; charts for monthly spend, category breakdown, and trend.
+**4. 📊 Финансы.** Expenses recorded automatically from confirmed receipts plus manual entries; charts for monthly spend, category breakdown, and trend. Monthly **limits** — overall or per category — show an over-run early rather than at month end, alongside a straight-line month-end **forecast**, the estimated cost of the current shopping list, and average cost per planned meal. An **AI spending review** reads the already-computed monthly figures and explains where the money went; every number it cites is one the server calculated, so the review reconciles exactly with the analytics endpoint. It is framed as observations about your own spending, not financial advice.
 
 **5. ⚖️ Вес.** One weight entry per day with a progress chart, shown alongside average daily КБЖУ from the meal calendar.
 
@@ -59,7 +59,7 @@ Receipt confirmed ←─ receipt scan (photo/text) ←─ you shop
 | 17 | PWA manifest, error states, cleanup cron, security walk | §10 P6 | 6 | ✅ |
 | 18 | Sentry error monitoring | §10 P6 | 6 | ⏸ needs founder's Sentry account + DSN; seam built (`src/lib/observability.ts`) |
 | 19 | Settings panel + personalised calorie/Б-Ж-У targets (Mifflin-St Jeor + AI explanation) | §10 P7 | 7 | ✅ |
-| 20 | Finance assistant (budgets, AI spending review, forecast, cost-per-meal) | §10 P8 | 8 | ⬜ |
+| 20 | Finance assistant (budgets, AI spending review, forecast, cost-per-meal) | §10 P8 | 8 | ✅ |
 | 21 | Family sharing, barcode scan, reminders, goals, native apps, offline | §10 | v2 | ⏸ |
 
 ## Tech stack
