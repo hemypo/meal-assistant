@@ -11,9 +11,10 @@ const tx = {
       void args;
       txCalls.push("product.createMany");
     }),
-    update: vi.fn(async (args: Args) => {
+    updateMany: vi.fn(async (args: Args) => {
       void args;
-      txCalls.push("product.update");
+      txCalls.push("product.updateMany");
+      return { count: 1 };
     }),
   },
   expense: {
@@ -23,9 +24,11 @@ const tx = {
     }),
   },
   receipt: {
-    update: vi.fn(async (args: Args) => {
+    // The conditional claim that opens the transaction (Stage 1).
+    updateMany: vi.fn(async (args: Args) => {
       void args;
-      txCalls.push("receipt.update");
+      txCalls.push("receipt.claim");
+      return { count: 1 };
     }),
   },
 };
@@ -140,8 +143,10 @@ describe("merge by normalised name", () => {
     const result = await confirmReceipt("user-a", "rc1");
 
     expect(result).toMatchObject({ ok: true, merged: 1, created: 1 });
-    expect(tx.product.update).toHaveBeenCalledWith({
-      where: { id: "p1" },
+    // Batched by quantity since Stage 1 — the behaviour (that product flips to
+    // IN_STOCK with the purchased quantity) is unchanged.
+    expect(tx.product.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["p1"] } },
       data: { status: "IN_STOCK", quantity: 1 },
     });
   });
@@ -187,11 +192,12 @@ describe("atomicity", () => {
     await confirmReceipt("user-a", "rc1");
 
     expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+    // The claim now leads: nothing is written until the receipt is ours.
     expect(txCalls).toEqual([
+      "receipt.claim",
       "product.createMany",
-      "product.update",
+      "product.updateMany",
       "expense.create",
-      "receipt.update",
     ]);
   });
 
@@ -222,8 +228,9 @@ describe("atomicity", () => {
     await confirmReceipt("user-a", "rc1");
 
     expect(prismaMock.receipt.update).not.toHaveBeenCalled();
-    expect(tx.receipt.update).toHaveBeenCalledWith({
-      where: { id: "rc1" },
+    // Confirmed via the in-transaction claim, guarded on it still being DRAFT.
+    expect(tx.receipt.updateMany).toHaveBeenCalledWith({
+      where: { id: "rc1", userId: "user-a", status: "DRAFT" },
       data: { status: "CONFIRMED", total: 526.8 },
     });
   });

@@ -195,6 +195,13 @@ export type ConfirmResult =
   | { ok: false; reason: "NOT_FOUND" | "NOT_DRAFT" | "EMPTY" };
 
 /**
+ * Thrown inside the confirm transaction when another request already claimed
+ * the receipt. Used to roll the transaction back — it never reaches the client,
+ * which sees a plain "already confirmed" result.
+ */
+class AlreadyConfirmedError extends Error {}
+
+/**
  * THE atomic confirm (master plan §9.1, CLAUDE.md §4).
  *
  * One transaction: every item merges into Product(IN_STOCK) by normalised
@@ -262,34 +269,59 @@ export async function confirmReceipt(
     }
   }
 
-  await prisma.$transaction(
-    async (tx) => {
-      if (toCreate.length > 0) {
-        await tx.product.createMany({ data: toCreate });
-      }
-      for (const update of toUpdate) {
-        await tx.product.update({
-          where: { id: update.id },
-          data: { status: "IN_STOCK", quantity: update.quantity },
+  // Matched items all become IN_STOCK; only the quantity differs. Grouping by
+  // quantity turns one statement per item into one per distinct value — a real
+  // receipt clusters heavily around 1 and 2, so this is usually 2–3 statements
+  // instead of thirty, and the transaction no longer lengthens with the basket.
+  const idsByQuantity = new Map<number, string[]>();
+  for (const update of toUpdate) {
+    const ids = idsByQuantity.get(update.quantity) ?? [];
+    ids.push(update.id);
+    idsByQuantity.set(update.quantity, ids);
+  }
+
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        // Claim the receipt FIRST, conditional on it still being a draft.
+        // This is the concurrency guard: two simultaneous confirms both pass
+        // the read-side check above, but only one can match this WHERE — the
+        // loser matches zero rows and aborts before any money is written.
+        const claimed = await tx.receipt.updateMany({
+          where: { id: receipt.id, userId, status: "DRAFT" },
+          data: { status: "CONFIRMED", total: amount },
         });
-      }
-      await tx.expense.create({
-        data: {
-          userId,
-          date: receipt.purchasedAt ?? new Date(),
-          category: EXPENSE_CATEGORY,
-          amount,
-          note: receipt.store,
-          receiptId: receipt.id,
-        },
-      });
-      await tx.receipt.update({
-        where: { id: receipt.id },
-        data: { status: "CONFIRMED", total: amount },
-      });
-    },
-    { timeout: 20_000, maxWait: 10_000 },
-  );
+        if (claimed.count === 0) throw new AlreadyConfirmedError();
+
+        if (toCreate.length > 0) {
+          await tx.product.createMany({ data: toCreate });
+        }
+        for (const [quantity, ids] of idsByQuantity) {
+          await tx.product.updateMany({
+            where: { id: { in: ids } },
+            data: { status: "IN_STOCK", quantity },
+          });
+        }
+        await tx.expense.create({
+          data: {
+            userId,
+            date: receipt.purchasedAt ?? new Date(),
+            category: EXPENSE_CATEGORY,
+            amount,
+            note: receipt.store,
+            receiptId: receipt.id,
+          },
+        });
+      },
+      { timeout: 20_000, maxWait: 10_000 },
+    );
+  } catch (error) {
+    // Losing the race is an expected outcome, not a failure to report.
+    if (error instanceof AlreadyConfirmedError) {
+      return { ok: false, reason: "NOT_DRAFT" };
+    }
+    throw error;
+  }
 
   return {
     ok: true,
